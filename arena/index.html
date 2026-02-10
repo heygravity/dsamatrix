@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Arena Hub | DSA Matrix</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%236366f1'/><circle cx='50' cy='50' r='20' fill='white'/><circle cx='25' cy='25' r='10' fill='white' opacity='0.5'/><circle cx='75' cy='75' r='10' fill='white' opacity='0.5'/></svg>">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050505;
+            --surface: #111111;
+            --accent: #6366f1;
+            --border: rgba(255, 255, 255, 0.08);
+            --chip-body: #18181b;
+            --pin-color: #3f3f46;
+        }
+
+        body {
+            background-color: var(--bg);
+            color: #efefef;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+        }
+
+        /* --- Logic Chip Card Design --- */
+        .logic-chip {
+            position: relative;
+            width: 100%;
+            background: var(--chip-body);
+            border-radius: 4px;
+            padding: 20px;
+            transition: all 0.5s cubic-bezier(0.23, 1, 0.32, 1);
+            cursor: pointer;
+            border: 1px solid #27272a;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        @media (min-width: 768px) {
+            .logic-chip {
+                padding: 24px;
+                gap: 16px;
+            }
+        }
+
+        /* IC Pins Styling - Adjusted for mobile spacing */
+        .logic-chip::before, .logic-chip::after {
+            content: "";
+            position: absolute;
+            left: -6px;
+            top: 20%;
+            bottom: 20%;
+            width: 6px;
+            background-image: linear-gradient(to bottom, 
+                var(--pin-color) 0%, var(--pin-color) 15%, 
+                transparent 15%, transparent 25%,
+                var(--pin-color) 25%, var(--pin-color) 40%,
+                transparent 40%, transparent 50%,
+                var(--pin-color) 50%, var(--pin-color) 65%,
+                transparent 65%, transparent 75%,
+                var(--pin-color) 75%, var(--pin-color) 90%,
+                transparent 90%);
+            background-size: 100% 40px;
+        }
+
+        .logic-chip::after {
+            left: auto;
+            right: -6px;
+        }
+
+        /* Chip Etched Surface */
+        .chip-surface {
+            position: relative;
+            background: #09090b;
+            border: 1px solid #27272a;
+            border-radius: 2px;
+            padding: 12px;
+            height: 100px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (min-width: 768px) {
+            .chip-surface {
+                padding: 16px;
+                height: 120px;
+            }
+        }
+
+        /* Circuit Pattern Overlay */
+        .circuit-lines {
+            position: absolute;
+            inset: 0;
+            opacity: 0.1;
+            background-image: 
+                radial-gradient(var(--accent) 1px, transparent 1px),
+                linear-gradient(to right, #27272a 1px, transparent 1px),
+                linear-gradient(to bottom, #27272a 1px, transparent 1px);
+            background-size: 20px 20px;
+            pointer-events: none;
+        }
+
+        .logic-chip:hover {
+            transform: translateY(-8px) scale(1.01);
+            border-color: var(--accent);
+            box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
+        }
+
+        .logic-chip:hover .chip-surface {
+            border-color: rgba(99, 102, 241, 0.4);
+        }
+
+        .logic-chip:hover .circuit-lines {
+            opacity: 0.2;
+        }
+
+        .led {
+            width: 4px;
+            height: 4px;
+            border-radius: 50%;
+            background: #3f3f46;
+            transition: all 0.3s ease;
+        }
+
+        .logic-chip:hover .led.active {
+            background: var(--accent);
+            box-shadow: 0 0 8px var(--accent);
+        }
+
+        /* Specialist Avatar */
+        .avatar-frame {
+            position: relative;
+            padding: 4px;
+            background: linear-gradient(135deg, var(--accent), transparent);
+            border-radius: 50%;
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .avatar-frame:hover {
+            transform: scale(1.05) rotate(5deg);
+        }
+
+        .avatar-inner {
+            width: 100px;
+            height: 100px;
+            background: #09090b;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid #18181b;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        @media (min-width: 640px) {
+            .avatar-inner { width: 120px; height: 120px; }
+        }
+
+        @media (min-width: 1024px) {
+            .avatar-inner { width: 160px; height: 160px; }
+        }
+
+        .bg-grain::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+            opacity: 0.02;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        #notification {
+            position: fixed;
+            bottom: 1.5rem;
+            left: 50%;
+            transform: translateX(-50%) translateY(120px);
+            transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
+            z-index: 1000;
+            width: calc(100% - 2rem);
+            max-width: 400px;
+        }
+
+        @media (min-width: 768px) {
+            #notification {
+                left: auto;
+                right: 2rem;
+                transform: translateY(120px);
+                width: 280px;
+            }
+            #notification.active { transform: translateY(0); }
+        }
+
+        #notification.active { transform: translateX(-50%) translateY(0); }
+        @media (min-width: 768px) {
+            #notification.active { transform: translateX(0) translateY(0); }
+        }
+
+        /* Prevent layout shift during profile load */
+        #profile-display {
+            min-height: 200px;
+        }
+    </style>
+</head>
+<body class="bg-grain">
+
+    <!-- Header Navigation -->
+    <nav class="p-4 md:p-8 flex justify-between items-center max-w-7xl mx-auto relative z-20">
+        <div class="flex items-center gap-2 md:gap-3">
+            <div class="w-7 h-7 md:w-8 md:h-8 bg-white rounded-lg flex items-center justify-center rotate-3 shadow-lg shadow-white/5">
+                <svg class="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+            </div>
+            <span class="font-extrabold tracking-tighter uppercase text-[10px] md:text-sm">Matrix Arena Hub</span>
+        </div>
+        <button id="logout-btn" class="text-[9px] md:text-[10px] mono uppercase tracking-widest text-zinc-500 hover:text-white transition-colors p-2">Terminate_Session</button>
+    </nav>
+
+    <main class="max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-12">
+        
+        <!-- Profile Section -->
+        <section id="profile-display" class="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8 mb-16 md:mb-24 opacity-0 transition-all duration-1000 transform translate-y-4">
+            <div class="avatar-frame">
+                <div class="avatar-inner">
+                    <svg viewBox="0 0 100 100" class="w-full h-full">
+                        <circle cx="50" cy="50" r="48" fill="rgba(99, 102, 241, 0.05)" />
+                        <path d="M50 30 C 40 30, 35 35, 35 45 C 35 55, 40 60, 50 60 C 60 60, 65 55, 65 45 C 65 35, 60 30, 50 30 Z" fill="#27272a" />
+                        <path d="M25 85 C 25 70, 35 65, 50 65 C 65 65, 75 70, 75 85" fill="none" stroke="#6366f1" stroke-width="2" stroke-linecap="round" />
+                        <circle cx="50" cy="45" r="8" fill="#6366f1" opacity="0.8" />
+                    </svg>
+                </div>
+            </div>
+
+            <div class="text-center md:text-left space-y-4 md:space-y-5 flex-1">
+                <div class="space-y-1">
+                    <p class="text-[8px] md:text-[9px] mono text-zinc-500 uppercase tracking-[0.4em]">Identity_Verified_Protocol</p>
+                    <h1 id="display-name" class="text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-extrabold tracking-tighter uppercase italic text-white break-words">RECRUIT_NAME</h1>
+                </div>
+
+                <div class="flex flex-wrap justify-center md:justify-start gap-3 md:gap-4">
+                    <div class="glass px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-[8px] md:text-[9px] mono text-zinc-400 uppercase border-white/5 whitespace-nowrap">
+                        DOB: <span id="display-dob" class="text-white">--/--/----</span>
+                    </div>
+                    <div id="email-tag" class="hidden glass px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-[8px] md:text-[9px] mono text-zinc-400 uppercase border-white/5 max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">
+                        COMMS: <span id="display-email" class="text-white">---</span>
+                    </div>
+                    <div class="bg-indigo-500/10 border border-indigo-500/30 px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-[8px] md:text-[9px] mono text-indigo-400 uppercase">
+                        TOTAL_EXP: <span id="display-total-exp" class="text-white font-black">0</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Logic Chips Registry -->
+        <section class="space-y-8 md:space-y-12">
+            <div class="flex items-center gap-4 md:gap-6">
+                <h2 class="text-[9px] md:text-[10px] mono text-zinc-600 uppercase tracking-[0.6em]">Logic_Combat_Modules</h2>
+                <div class="h-[1px] flex-1 bg-zinc-900"></div>
+            </div>
+
+            <div id="module-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-10">
+                <!-- Modules will be injected by JavaScript -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Notification Toast -->
+    <div id="notification" class="glass px-6 py-4 rounded-2xl flex items-center gap-4 border-l-4 border-l-indigo-500 shadow-2xl">
+        <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+        <span id="notification-text" class="text-[10px] font-bold tracking-wider text-zinc-200 uppercase">Arena Connected</span>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { firebaseConfig } from "../script/base.js";
+
+        // Firebase Config
+        //const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // UI Selectors
+        const displayName = document.getElementById('display-name');
+        const displayDob = document.getElementById('display-dob');
+        const displayEmail = document.getElementById('display-email');
+        const emailTag = document.getElementById('email-tag');
+        const displayTotalExp = document.getElementById('display-total-exp');
+        const profileSection = document.getElementById('profile-display');
+        const moduleGrid = document.getElementById('module-grid');
+        const logoutBtn = document.getElementById('logout-btn');
+        const notification = document.getElementById('notification');
+        const notificationText = document.getElementById('notification-text');
+
+        const MODULE_REGISTRY = [
+            {
+                id: 'bst',
+                title: 'BST_Stabilizer',
+                concept: 'Hierarchical Trees',
+                active: true,
+                url: './game.html',
+                graphic: `<svg viewBox="0 0 100 60" class="w-full h-12 max-h-full"><path d="M50 10 L30 35 M50 10 L70 35" stroke="currentColor" stroke-width="1.5" /><circle cx="50" cy="10" r="5" fill="currentColor"/><circle cx="30" cy="35" r="5" fill="currentColor" opacity="0.4"/><circle cx="70" cy="35" r="5" fill="#6366f1"/></svg>`
+            },
+            {
+                id: 'list',
+                title: 'Chain_Persist',
+                concept: 'Linked Lists',
+                active: false,
+                graphic: `<svg viewBox="0 0 100 60" class="w-full h-10 max-h-full"><rect x="10" y="25" width="15" height="10" rx="1" fill="currentColor"/><rect x="42.5" y="25" width="15" height="10" rx="1" fill="currentColor"/><rect x="75" y="25" width="15" height="10" rx="1" fill="currentColor"/><path d="M25 30 L42.5 30 M57.5 30 L75 30" stroke="currentColor" stroke-width="2" stroke-dasharray="2"/></svg>`
+            },
+            {
+                id: 'graph',
+                title: 'Path_Navigator',
+                concept: 'Graph Networks',
+                active: false,
+                graphic: `<svg viewBox="0 0 100 60" class="w-full h-10 max-h-full"><circle cx="20" cy="15" r="4" fill="currentColor"/><circle cx="80" cy="15" r="4" fill="currentColor"/><circle cx="50" cy="45" r="4" fill="currentColor"/><path d="M24 15 L76 15 M23 18 L47 43 M77 18 L53 43" stroke="currentColor" stroke-width="1" opacity="0.3"/></svg>`
+            },
+            {
+                id: 'stack',
+                title: 'Stack_Overflow',
+                concept: 'LIFO Buffers',
+                active: false,
+                graphic: `<svg viewBox="0 0 100 60" class="w-full h-10 max-h-full"><rect x="35" y="10" width="30" height="6" fill="#6366f1"/><rect x="35" y="20" width="30" height="6" fill="currentColor" opacity="0.6"/><rect x="35" y="30" width="30" height="6" fill="currentColor" opacity="0.3"/><path d="M30 5 V 45 H 70 V 5" fill="none" stroke="currentColor" stroke-width="2"/></svg>`
+            }
+        ];
+
+        function notify(message) {
+            notificationText.innerText = message;
+            notification.classList.add('active');
+            setTimeout(() => notification.classList.remove('active'), 4000);
+        }
+
+        const navigateTo = (path) => {
+            const url = new URL(path, window.location.origin + window.location.pathname);
+            window.location.assign(url.href);
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                const cached = localStorage.getItem('matrix_user_session');
+                if (cached) {
+                    try {
+                        const data = JSON.parse(cached);
+                        if (data.uid === user.uid) updateProfileUI(data);
+                    } catch (e) { localStorage.removeItem('matrix_user_session'); }
+                }
+                await fetchRegistryData(user.uid);
+            } else {
+                navigateTo('../index.html');
+            }
+        });
+
+        async function fetchRegistryData(uid) {
+            try {
+                // RULE 1: Direct access path to specialist profile
+                const profileRef = doc(db, 'artifacts', uid, 'profile', 'data');
+                const snap = await getDoc(profileRef);
+
+                if (snap.exists()) {
+                    let data = snap.data();
+                    let updated = false;
+
+                    if (!data.scores) {
+                        data.scores = {};
+                        updated = true;
+                    }
+
+                    MODULE_REGISTRY.forEach(mod => {
+                        if (data.scores[mod.id] === undefined) {
+                            data.scores[mod.id] = 0;
+                            updated = true;
+                        }
+                    });
+
+                    if (updated) {
+                        await updateDoc(profileRef, { scores: data.scores });
+                    }
+
+                    updateProfileUI(data);
+                    localStorage.setItem('matrix_user_session', JSON.stringify({ uid, ...data }));
+                } else {
+                    navigateTo('../index.html');
+                }
+            } catch (err) {
+                console.error("Registry sync error:", err);
+                notify("ERR: LOG_SYNC_INTERRUPTED");
+            }
+        }
+
+        function updateProfileUI(data) {
+            displayName.innerText = data.name || "LOGIC_CADET";
+            displayDob.innerText = data.dob || "--/--/----";
+            
+            if (data.email) {
+                displayEmail.innerText = data.email;
+                emailTag.classList.remove('hidden');
+            } else {
+                emailTag.classList.add('hidden');
+            }
+
+            const scores = data.scores || {};
+            const total = Object.values(scores).reduce((a, b) => Number(a) + Number(b), 0);
+            displayTotalExp.innerText = total;
+
+            renderChips(scores);
+            
+            profileSection.classList.remove('opacity-0', 'translate-y-4');
+            profileSection.classList.add('opacity-100', 'translate-y-0');
+        }
+
+        function renderChips(scores) {
+            moduleGrid.innerHTML = '';
+            MODULE_REGISTRY.forEach((mod, index) => {
+                const score = scores[mod.id] || 0;
+                const chip = document.createElement('div');
+                chip.className = `logic-chip group ${!mod.active ? 'opacity-60 grayscale-[0.5]' : ''}`;
+                chip.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div class="flex gap-1">
+                            <div class="led active bg-zinc-600"></div>
+                            <div class="led ${mod.active ? 'active' : ''}"></div>
+                        </div>
+                        <span class="text-[8px] mono text-zinc-600">REV.0${index + 1}</span>
+                    </div>
+                    <div class="chip-surface">
+                        <div class="circuit-lines"></div>
+                        <div class="relative z-10 text-zinc-400 group-hover:text-white transition-colors h-full flex items-center justify-center">
+                            ${mod.graphic}
+                        </div>
+                    </div>
+                    <div class="space-y-1 relative z-10">
+                        <h3 class="text-[10px] md:text-[11px] font-black uppercase tracking-tighter text-white">${mod.title}</h3>
+                        <p class="text-[7px] mono text-zinc-500 uppercase">${mod.concept}</p>
+                    </div>
+                    <div class="flex justify-between items-end border-t border-zinc-800 pt-3 mt-1">
+                        <div class="flex flex-col">
+                            <span class="text-[7px] mono text-zinc-600 uppercase">Highscore</span>
+                            <span class="text-[10px] font-black text-indigo-400">${score}</span>
+                        </div>
+                        <div class="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center group-hover:bg-indigo-600 transition-colors">
+                            ${mod.active ? '<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>' : '<svg class="w-3 h-3 text-zinc-600" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8V7a4 4 0 00-8 0v1H5v11h14V8h-1zm-6-3a2 2 0 012 2v1h-4V7a2 2 0 012-2z"/></svg>'}
+                        </div>
+                    </div>
+                `;
+
+                chip.addEventListener('click', () => {
+                    if (mod.active) {
+                        navigateTo(mod.url);
+                    } else {
+                        notify(`NOTICE: ${mod.title} UNDER ENCRYPTION // COMING SOON`);
+                    }
+                });
+
+                moduleGrid.appendChild(chip);
+            });
+        }
+
+        // Session Termination
+        logoutBtn.addEventListener('click', async () => {
+            try {
+                await signOut(auth);
+                localStorage.removeItem('matrix_user_session');
+                notify("PROTOCOL: TERMINATING_CONNECTION");
+                setTimeout(() => navigateTo('../index.html'), 1000);
+            } catch (err) {
+                notify("ERR: DISCONNECT_FAILED");
+            }
+        });
+    </script>
+</body>
+</html>
