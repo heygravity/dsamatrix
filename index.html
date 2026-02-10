@@ -1,0 +1,580 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DSA Matrix | Minimalist Logic Combat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050505;
+            --surface: #111111;
+            --accent: #6366f1;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            background-color: var(--bg);
+            color: #efefef;
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden;
+            scroll-behavior: auto; /* Managed by JS for precision smooth scrolling */
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        /* Splash Screen */
+        #splash-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: transform 1s cubic-bezier(0.87, 0, 0.13, 1);
+        }
+
+        #splash-screen.hidden-splash {
+            transform: translateY(-100%);
+        }
+
+        /* Reveal Animations */
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-15px) rotate(1deg); }
+        }
+
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
+        }
+
+        /* Sequential Node Scanning */
+        @keyframes node-scan {
+            0%, 100% { fill: var(--accent); filter: drop-shadow(0 0 2px var(--accent)); }
+            50% { fill: #fff; filter: drop-shadow(0 0 8px #fff); }
+        }
+
+        .scan-1 { animation: node-scan 3s infinite; }
+        .scan-2 { animation: node-scan 3s infinite 1.5s; }
+        .scan-3 { animation: node-scan 3s infinite 0.75s; }
+
+        @keyframes dash-move {
+            to { stroke-dashoffset: -20; }
+        }
+
+        .line-anim {
+            stroke-dasharray: 5;
+            animation: dash-move 2s linear infinite;
+        }
+
+        @keyframes pulse-ring {
+            0% { transform: scale(0.33); opacity: 1; }
+            80%, 100% { opacity: 0; }
+        }
+
+        .pulse-circle {
+            animation: pulse-ring 2s cubic-bezier(0.455, 0.03, 0.515, 0.955) infinite;
+        }
+
+        @keyframes scan-y {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        .scan-line {
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(99, 102, 241, 0.8), transparent);
+            position: absolute;
+            animation: scan-y 3s linear infinite;
+        }
+
+        /* Glass Surface Effects */
+        .glass {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+            transition: all 0.5s ease;
+        }
+
+        .glass:hover {
+            background: rgba(255, 255, 255, 0.05);
+            border-color: rgba(255, 255, 255, 0.2);
+            transform: translateY(-8px);
+        }
+
+        /* 3D Phone Mockup Styling */
+        .phone-container {
+            perspective: 2000px;
+        }
+
+        .phone-mockup {
+            transform-style: preserve-3d;
+            transition: transform 0.1s ease-out;
+            box-shadow: 0 40px 80px -20px rgba(0, 0, 0, 0.9);
+        }
+
+        /* Dynamic Navbar State Transitions */
+        nav {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        nav.scrolled {
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+        }
+
+        nav.scrolled .nav-container {
+            max-width: 100% !important;
+            border-radius: 0 !important;
+            border-left: none;
+            border-right: none;
+            border-top: none;
+            background-color: rgba(5, 5, 5, 0.98);
+            padding: 1rem 2rem;
+            backdrop-filter: blur(10px);
+        }
+
+        .nav-link {
+            position: relative;
+            padding-bottom: 2px;
+            transition: color 0.3s ease;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; width: 0; height: 1px;
+            background: white;
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after, .nav-link.active::after {
+            width: 100%;
+        }
+
+        .nav-link.active {
+            color: #ffffff !important;
+        }
+
+        /* Custom UI Components */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+
+        .bg-grain::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+            opacity: 0.02;
+            pointer-events: none;
+            z-index: 100;
+        }
+    </style>
+</head>
+<body class="bg-grain">
+
+    <!-- Splash Screen -->
+    <div id="splash-screen">
+        <div class="text-center">
+            <h1 class="text-3xl font-extrabold tracking-tighter mb-4 italic uppercase">DSA MATRIX</h1>
+            <div class="h-[1px] w-24 bg-zinc-800 mx-auto overflow-hidden">
+                <div class="h-full bg-white w-full origin-left scale-x-0 animate-[load_1.5s_ease-in-out_forwards]"></div>
+            </div>
+            <p class="mono text-[9px] text-zinc-600 uppercase tracking-[0.5em] mt-4">Compiling_Arena_Environment</p>
+        </div>
+    </div>
+
+    <!-- Navigation -->
+    <nav id="main-nav" class="fixed top-0 w-full z-50 px-0 md:px-6 py-4 md:py-6">
+        <div class="nav-container max-w-6xl mx-auto flex justify-between items-center bg-zinc-950/40 backdrop-blur-md border border-white/5 px-6 py-3 md:px-8 md:py-4 rounded-2xl md:rounded-[2rem] shadow-2xl transition-all duration-500">
+            <div class="flex items-center gap-3 group cursor-pointer" onclick="smoothScroll('#hero')">
+                <div class="w-8 h-8 md:w-10 md:h-10 bg-white rounded-xl flex items-center justify-center rotate-3 group-hover:rotate-0 transition-all duration-500 shadow-lg shadow-white/5">
+                    <svg class="w-4 h-4 md:w-5 md:h-5 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <span class="font-extrabold tracking-tighter text-lg md:text-xl uppercase">DSA Matrix</span>
+            </div>
+            
+            <div class="hidden md:flex gap-10 lg:gap-12 text-[10px] lg:text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
+                <a href="#hero" class="nav-link hover:text-white">Hub</a>
+                <a href="#structures" class="nav-link hover:text-white">Structures</a>
+                <a href="#lore" class="nav-link hover:text-white">Lore</a>
+                <a href="#contact" class="nav-link hover:text-white">Contact</a>
+            </div>
+
+            <button class="px-5 py-2 md:px-7 md:py-2.5 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-full hover:bg-zinc-200 transition-all shadow-xl shadow-white/5 active:scale-95">
+                Let's Play
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="hero" class="min-h-screen flex items-center pt-24 pb-12 px-6 overflow-hidden">
+        <div class="max-w-6xl mx-auto w-full grid md:grid-cols-5 lg:grid-cols-2 gap-8 lg:gap-16 items-center">
+            <!-- Left Side: Hero Text -->
+            <div class="space-y-8 reveal text-center md:text-left md:col-span-3 lg:col-span-1">
+                <div class="inline-flex items-center gap-3 px-3 py-1 bg-zinc-900/50 border border-zinc-800 text-zinc-400 text-[9px] font-bold uppercase tracking-[0.3em] rounded mx-auto md:mx-0">
+                    <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                    Initializing_Alpha_Phase
+                </div>
+                <h2 class="text-5xl md:text-6xl lg:text-[88px] font-extrabold tracking-tighter leading-[0.85]">
+                    MASTER THE <br><span class="text-zinc-600 italic">SYLLABUS.</span>
+                </h2>
+                <p class="text-zinc-500 text-lg md:text-xl max-w-md font-light leading-relaxed mx-auto md:mx-0">
+                    A clinical interactive arena where logic is your blade. Experience data structures as high-stakes systems in the ultimate web matrix.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-5 justify-center md:justify-start items-center">
+                    <button onclick="smoothScroll('#structures')" class="w-full sm:w-auto px-8 py-5 bg-zinc-900 border border-zinc-800 hover:border-zinc-500 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all hover:bg-zinc-800 active:scale-95">
+                        Access Concepts
+                    </button>
+                    <div class="flex items-center gap-4 px-2">
+                        <div class="relative w-8 h-8 rounded-full border border-zinc-800 bg-zinc-900 flex items-center justify-center">
+                            <div class="absolute inset-0 rounded-full border border-indigo-500/50 pulse-circle"></div>
+                            <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
+                        </div>
+                        <span class="text-[10px] text-zinc-600 mono uppercase tracking-widest">Coming soon to the Matrix</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Side: Phone Mockup -->
+            <div class="phone-container flex justify-center md:justify-end md:col-span-2 lg:col-span-1 reveal" style="transition-delay: 200ms;">
+                <div class="phone-mockup animate-float w-[240px] md:w-[260px] lg:w-[280px] h-[480px] md:h-[520px] lg:h-[570px] bg-zinc-900 border-[1px] border-zinc-800 rounded-[3rem] p-3 relative">
+                    <div class="h-full w-full bg-black rounded-[2.5rem] overflow-hidden flex flex-col p-6 relative">
+                        <div class="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-transparent pointer-events-none"></div>
+                        
+                        <div class="flex justify-between items-center mb-10">
+                            <div class="w-7 h-7 rounded-lg bg-white/5 border border-white/10 flex items-center justify-center">
+                                <svg class="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16m-7 6h7"/></svg>
+                            </div>
+                            <div class="px-2 py-0.5 rounded-full border border-white/20 text-[7px] text-zinc-400 font-bold uppercase tracking-widest">System Preview</div>
+                        </div>
+                        
+                        <!-- Mini Game UI View -->
+                        <div class="flex-1 flex flex-col gap-6">
+                            <div class="text-center space-y-1">
+                                <h4 class="text-[9px] mono text-zinc-600 uppercase tracking-widest">Simulation_Mode</h4>
+                                <p class="text-base font-extrabold tracking-tighter">Tree Stabilization</p>
+                            </div>
+                            
+                            <div class="flex-1 glass rounded-2xl p-4 flex items-center justify-center relative overflow-hidden">
+                                <svg viewBox="0 0 100 80" class="w-44 h-44">
+                                    <line x1="50" y1="15" x2="30" y2="42" stroke="white" stroke-opacity="0.15" stroke-width="1.5" class="line-anim"/>
+                                    <line x1="50" y1="15" x2="70" y2="42" stroke="white" stroke-opacity="0.15" stroke-width="1.5" class="line-anim"/>
+                                    <circle cx="50" cy="15" r="7" fill="none" stroke="white" stroke-width="1.5" class="scan-1"/>
+                                    <circle cx="30" cy="42" r="7" fill="white" class="scan-2"/>
+                                    <circle cx="70" cy="42" r="7" fill="none" stroke="white" stroke-width="1.5" class="scan-3"/>
+                                    <path d="M26 48 L18 64" stroke="white" stroke-opacity="0.1" stroke-width="1" class="line-anim"/>
+                                    <circle cx="15" cy="70" r="6" fill="none" stroke="white" stroke-width="1" stroke-dasharray="2" class="scan-1"/>
+                                </svg>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-2">
+                                <div class="h-12 bg-white/5 border border-white/10 rounded-xl flex items-center justify-center text-[8px] mono uppercase text-zinc-500">Rotate_L</div>
+                                <div class="h-12 bg-white rounded-xl flex items-center justify-center text-[8px] font-bold uppercase text-black">Balance()</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Concepts Grid (Data Registry) -->
+    <section id="structures" class="py-32 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="mb-24 reveal">
+                <h3 class="text-sm mono text-zinc-500 uppercase tracking-[0.5em] mb-4">// Logic_Core</h3>
+                <h4 class="text-4xl md:text-5xl font-extrabold tracking-tighter uppercase italic">DATA REGISTRY</h4>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-8">
+                <!-- Concept Card 1: Tree -->
+                <div class="glass p-8 md:p-10 rounded-[2.5rem] group reveal">
+                    <div class="mb-10 h-24 flex items-center justify-center bg-zinc-900/30 rounded-2xl border border-white/5">
+                        <svg viewBox="0 0 100 60" class="w-16 text-zinc-500 group-hover:text-white transition-all duration-700">
+                            <line x1="50" y1="15" x2="35" y2="35" stroke="currentColor" stroke-opacity="0.2" class="line-anim"/>
+                            <line x1="50" y1="15" x2="65" y2="35" stroke="currentColor" stroke-opacity="0.2" class="line-anim"/>
+                            <circle cx="50" cy="15" r="6" fill="currentColor" class="scan-1"/>
+                            <circle cx="30" cy="40" r="6" fill="currentColor" opacity="0.3" class="scan-2"/>
+                            <circle cx="70" cy="40" r="6" fill="currentColor" opacity="0.3" class="scan-3"/>
+                        </svg>
+                    </div>
+                    <h5 class="text-xl font-bold mb-4 uppercase tracking-tighter">Hierarchical Trees</h5>
+                    <p class="text-zinc-500 text-sm leading-relaxed font-light">
+                        Command complex structures. Balance BSTs and traverse multi-node layers in logarithmic time complexity.
+                    </p>
+                </div>
+
+                <!-- Concept Card 2: Linked List -->
+                <div class="glass p-8 md:p-10 rounded-[2.5rem] group reveal" style="transition-delay: 100ms;">
+                    <div class="mb-10 h-24 flex items-center justify-center bg-zinc-900/30 rounded-2xl border border-white/5">
+                        <svg viewBox="0 0 100 40" class="w-24 text-zinc-500 group-hover:text-white transition-all duration-700">
+                            <rect x="10" y="10" width="15" height="15" rx="2" fill="currentColor" opacity="0.3" class="scan-1"/>
+                            <line x1="25" y1="17.5" x2="40" y2="17.5" stroke="currentColor" stroke-width="1.5" stroke-opacity="0.2" class="line-anim"/>
+                            <rect x="42" y="10" width="15" height="15" rx="2" fill="currentColor" class="scan-2"/>
+                            <line x1="57" y1="17.5" x2="72" y2="17.5" stroke="currentColor" stroke-width="1.5" stroke-opacity="0.2" class="line-anim"/>
+                            <rect x="74" y="10" width="15" height="15" rx="2" fill="currentColor" opacity="0.3" class="scan-3"/>
+                        </svg>
+                    </div>
+                    <h5 class="text-xl font-bold mb-4 uppercase tracking-tighter">Chain Persistence</h5>
+                    <p class="text-zinc-500 text-sm leading-relaxed font-light">
+                        Manipulate supply lines through node linkage. One broken pointer ends the sequence protocol.
+                    </p>
+                </div>
+
+                <!-- Concept Card 3: Graphs -->
+                <div class="glass p-8 md:p-10 rounded-[2.5rem] group reveal" style="transition-delay: 200ms;">
+                    <div class="mb-10 h-24 flex items-center justify-center bg-zinc-900/30 rounded-2xl border border-white/5">
+                        <svg viewBox="0 0 100 60" class="w-16 text-zinc-500 group-hover:text-white transition-all duration-700">
+                            <circle cx="20" cy="30" r="4" fill="currentColor" class="scan-1"/>
+                            <circle cx="50" cy="10" r="4" fill="currentColor" class="scan-2"/>
+                            <circle cx="80" cy="30" r="4" fill="currentColor" class="scan-3"/>
+                            <circle cx="50" cy="50" r="4" fill="currentColor" class="scan-1"/>
+                            <path d="M24 30 L46 12 M54 12 L76 30 M76 30 L54 48 M46 48 L24 30" stroke="currentColor" stroke-width="0.5" stroke-opacity="0.3" class="line-anim"/>
+                        </svg>
+                    </div>
+                    <h5 class="text-xl font-bold mb-4 uppercase tracking-tighter">Pathing Networks</h5>
+                    <p class="text-zinc-500 text-sm leading-relaxed font-light">
+                        Solve Dijkstra's and BFS waves under pressure. Find the most efficient traversal path in the network.
+                    </p>
+                </div>
+
+                <!-- Concept Card 4: Memory Stacks -->
+                <div class="glass p-8 md:p-10 rounded-[2.5rem] group reveal" style="transition-delay: 300ms;">
+                    <div class="mb-10 h-24 flex flex-col-reverse gap-1 items-center justify-center bg-zinc-900/30 rounded-2xl border border-white/5">
+                        <div class="w-12 h-3 bg-indigo-500/80 rounded-sm scan-1"></div>
+                        <div class="w-12 h-3 bg-zinc-700/50 rounded-sm scan-2"></div>
+                        <div class="w-12 h-3 bg-zinc-700/50 rounded-sm scan-3"></div>
+                        <div class="w-12 h-3 bg-zinc-700/50 rounded-sm scan-1"></div>
+                    </div>
+                    <h5 class="text-xl font-bold mb-4 uppercase tracking-tighter">Memory Stacks</h5>
+                    <p class="text-zinc-500 text-sm leading-relaxed font-light">
+                        Protect your stack from overflow. Manage high-speed LIFO buffers and execute recursive tactical logic.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Lore Section -->
+    <section id="lore" class="py-32 px-6">
+        <div class="max-w-6xl mx-auto">
+            <div class="flex flex-col lg:flex-row items-center gap-16 lg:gap-24 mb-32">
+                <div class="lg:w-1/2 reveal text-center lg:text-left">
+                    <h3 class="text-sm mono text-zinc-500 uppercase tracking-[0.5em] mb-6">// The_Anomaly</h3>
+                    <h4 class="text-5xl md:text-6xl font-extrabold tracking-tighter mb-8 leading-tight italic uppercase text-zinc-400">LOGIC <br>FRAGMENTATION.</h4>
+                    <div class="space-y-6 text-zinc-400 text-lg font-light leading-relaxed">
+                        <p>
+                            The global stack is suffering from a <span class="text-white font-semibold italic">Memory Leak.</span> Reality is fragmenting as operational complexity reaches critical mass.
+                        </p>
+                        <p>
+                            You are a Logic Cadet. Reconstruct the broken sectors, optimize the traversals, and prevent a total memory collapse in the Matrix.
+                        </p>
+                    </div>
+                </div>
+                <!-- Logic Integrity Monitor -->
+                <div class="lg:w-1/2 reveal" style="transition-delay: 200ms;">
+                    <div class="aspect-video glass rounded-[3rem] overflow-hidden relative shadow-2xl bg-zinc-900/40 flex items-center justify-center p-8">
+                        <svg viewBox="0 0 200 120" class="w-full h-full">
+                            <defs>
+                                <linearGradient id="visualizer-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+                                    <stop offset="0%" stop-color="rgba(99, 102, 241, 0.25)" />
+                                    <stop offset="100%" stop-color="rgba(99, 102, 241, 0)" />
+                                </linearGradient>
+                            </defs>
+                            <path d="M0 20 L200 20 M0 40 L200 40 M0 60 L200 60 M0 80 L200 80 M0 100 L200 100" stroke="rgba(255,255,255,0.03)" stroke-width="0.5" />
+                            <path d="M40 0 L40 120 M80 0 L80 120 M120 0 L120 120 M160 0 L160 120" stroke="rgba(255,255,255,0.03)" stroke-width="0.5" />
+                            <path d="M0 60 Q 25 30 50 60 T 100 60 T 150 60 T 200 60" stroke="rgba(99, 102, 241, 0.4)" fill="none" class="line-anim"/>
+                            <rect x="20" y="40" width="160" height="40" fill="url(#visualizer-grad)" rx="4"/>
+                            <g>
+                                <circle cx="40" cy="60" r="3" fill="var(--accent)" class="scan-1"/>
+                                <text x="35" y="75" fill="rgba(255,255,255,0.4)" font-size="4" class="mono">0x7F41</text>
+                                <circle cx="100" cy="60" r="3" fill="var(--accent)" class="scan-2"/>
+                                <text x="95" y="75" fill="rgba(255,255,255,0.4)" font-size="4" class="mono">0x2A0B</text>
+                                <circle cx="160" cy="60" r="3" fill="var(--accent)" class="scan-3"/>
+                                <text x="155" y="75" fill="rgba(255,255,255,0.4)" font-size="4" class="mono">0xFF12</text>
+                            </g>
+                            <text x="10" y="15" fill="#6366f1" font-size="6" class="mono font-bold">STATUS: MONITORING_NODES</text>
+                            <text id="integrity-text" x="150" y="15" fill="rgba(255,255,255,0.6)" font-size="6" class="mono">INTEGRITY: 94.2%</text>
+                        </svg>
+                        <div class="scan-line"></div>
+                        <div class="absolute inset-0 bg-gradient-to-t from-black via-transparent to-transparent"></div>
+                        <div class="absolute bottom-8 left-8">
+                            <div class="flex items-center gap-3">
+                                <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+                                <span class="text-[10px] mono text-white uppercase tracking-widest">Logic_Integrity_Monitor_v01</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feedback Form -->
+    <section id="contact" class="py-32 px-6">
+        <div class="max-w-4xl mx-auto text-center reveal">
+            <h3 class="text-sm mono text-zinc-500 uppercase tracking-[0.5em] mb-4">Feedback</h3>
+            <h4 class="text-4xl md:text-5xl font-extrabold tracking-tighter mb-16 uppercase italic">CONTACT THE MATRIX</h4>
+            <form class="space-y-6 text-left" onsubmit="event.preventDefault();">
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div class="space-y-2">
+                        <label class="text-[10px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Full Name</label>
+                        <input type="text" class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-5 focus:outline-none focus:border-zinc-500 transition-colors text-white text-sm" placeholder="John Doe">
+                    </div>
+                    <div class="space-y-2">
+                        <label class="text-[10px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Email Address</label>
+                        <input type="email" class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-5 focus:outline-none focus:border-zinc-500 transition-colors text-white text-sm" placeholder="john@example.com">
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    <label class="text-[10px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Your Message</label>
+                    <textarea rows="6" class="w-full bg-zinc-900 border border-zinc-800 rounded-2xl px-6 py-5 focus:outline-none focus:border-zinc-500 transition-colors text-white text-sm" placeholder="Tell us your suggestions, report a bug, or share your thoughts..."></textarea>
+                </div>
+                <button class="w-full py-6 bg-white text-black font-extrabold uppercase text-xs tracking-[0.4em] rounded-2xl hover:bg-zinc-200 transition-all transform active:scale-95 shadow-2xl shadow-white/5">
+                    Send Message
+                </button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Clean Minimal Footer -->
+    <footer class="py-12 border-t border-zinc-900 px-6">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="text-[10px] mono text-zinc-600 tracking-widest uppercase">
+                &copy; <span id="year"></span> DSA_MATRIX_STUDIO | Gravity™️
+            </div>
+            <div class="flex gap-8 text-[10px] font-bold uppercase tracking-widest text-zinc-600">
+                <a href="#" class="hover:text-white transition-colors">Discord</a>
+                <a href="#" class="hover:text-white transition-colors">Git_Log</a>
+                <a href="#" class="hover:text-white transition-colors">Data_Security</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Automatic Year Generation
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // Initial Entry Flow
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('splash-screen').classList.add('hidden-splash');
+            }, 1800);
+        });
+
+        /**
+         * Enhanced Smooth Scroll Handler
+         */
+        function smoothScroll(target) {
+            const element = document.querySelector(target);
+            if (element) {
+                const navHeight = document.getElementById('main-nav').offsetHeight;
+                const elementPosition = element.getBoundingClientRect().top + window.pageYOffset;
+                const offsetPosition = elementPosition - (navHeight / 1.5);
+
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
+            }
+        }
+
+        // Navigation Controller: Scroll Tracking & Active States
+        const nav = document.getElementById('main-nav');
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        window.addEventListener('scroll', () => {
+            // Navbar Transition Logic
+            if (window.scrollY > 50) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+
+            // Scroll-Spy Active State Logic
+            let currentSectionId = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop;
+                if (window.pageYOffset >= (sectionTop - 400)) {
+                    currentSectionId = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').includes(currentSectionId)) {
+                    link.classList.add('active');
+                }
+            });
+        });
+
+        // Diagnostic Readout Logic
+        const integrityText = document.getElementById('integrity-text');
+        setInterval(() => {
+            const val = (94 + Math.random() * 2).toFixed(1);
+            if(integrityText) integrityText.innerText = `INTEGRITY: ${val}%`;
+        }, 1500);
+
+        // Scroll Reveal Implementation
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+
+        // Interaction: 3D Mouse Parallax
+        const mockup = document.querySelector('.phone-mockup');
+        const container = document.querySelector('.phone-container');
+
+        window.addEventListener('mousemove', (e) => {
+            if (window.innerWidth < 768 || !mockup) return;
+            const xAxis = (window.innerWidth / 2 - e.pageX) / 50;
+            const yAxis = (window.innerHeight / 2 - e.pageY) / 50;
+            mockup.style.transform = `rotateY(${xAxis}deg) rotateX(${-yAxis}deg)`;
+        });
+
+        if (container) {
+            container.addEventListener('mouseleave', () => {
+                mockup.style.transform = `rotateY(0deg) rotateX(0deg)`;
+                mockup.style.transition = 'transform 0.8s cubic-bezier(0.23, 1, 0.32, 1)';
+            });
+            container.addEventListener('mouseenter', () => {
+                mockup.style.transition = 'none';
+            });
+        }
+
+        // Global Event Delegation for Navigational Anchors
+        document.querySelectorAll('.nav-link, a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                const href = this.getAttribute('href');
+                if (href && href.startsWith('#')) {
+                    e.preventDefault();
+                    smoothScroll(href);
+                }
+            });
+        });
+    </script>
+</body>
+</html>
