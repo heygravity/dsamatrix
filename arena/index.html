@@ -366,7 +366,7 @@
                 }
                 await fetchRegistryData(user.uid);
             } else {
-                navigateTo('../index.html');
+                navigateTo('../auth/index.html');
             }
         });
 
@@ -399,7 +399,7 @@
                     updateProfileUI(data);
                     localStorage.setItem('matrix_user_session', JSON.stringify({ uid, ...data }));
                 } else {
-                    navigateTo('../index.html');
+                    navigateTo('../auth/index.html');
                 }
             } catch (err) {
                 console.error("Registry sync error:", err);
@@ -481,7 +481,7 @@
                 await signOut(auth);
                 localStorage.removeItem('matrix_user_session');
                 notify("PROTOCOL: TERMINATING_CONNECTION");
-                setTimeout(() => navigateTo('../index.html'), 1000);
+                setTimeout(() => navigateTo('../auth/index.html'), 1000);
             } catch (err) {
                 notify("ERR: DISCONNECT_FAILED");
             }
