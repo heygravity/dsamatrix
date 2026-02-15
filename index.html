@@ -37,11 +37,18 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            transition: transform 1s cubic-bezier(0.87, 0, 0.13, 1);
+            transition: transform 1s cubic-bezier(0.87, 0, 0.13, 1), opacity 0.5s ease;
         }
 
         #splash-screen.hidden-splash {
             transform: translateY(-100%);
+            pointer-events: none;
+        }
+
+        #splash-screen.visible-splash {
+            transform: translateY(0);
+            opacity: 1;
+            pointer-events: all;
         }
 
         /* Scroll Reveal Transitions */
@@ -188,6 +195,11 @@
             pointer-events: none;
             z-index: 100;
         }
+
+        @keyframes load {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
+        }
     </style>
 </head>
 <body class="bg-grain">
@@ -197,9 +209,9 @@
         <div class="text-center">
             <h1 class="text-3xl font-extrabold tracking-tighter mb-4 italic uppercase">DSA MATRIX</h1>
             <div class="h-[1px] w-24 bg-zinc-800 mx-auto overflow-hidden">
-                <div class="h-full bg-white w-full origin-left scale-x-0 animate-[load_1.5s_ease-in-out_forwards]"></div>
+                <div id="splash-bar" class="h-full bg-white w-full origin-left scale-x-0"></div>
             </div>
-            <p class="mono text-[9px] text-zinc-600 uppercase tracking-[0.5em] mt-4">Initializing_Matrix_Protocol</p>
+            <p id="splash-text" class="mono text-[9px] text-zinc-600 uppercase tracking-[0.5em] mt-4">Initializing_Matrix_Protocol</p>
         </div>
     </div>
 
@@ -220,7 +232,7 @@
                 <a href="#contact" class="nav-link hover:text-white">Contact</a>
             </div>
 
-            <button class="px-5 py-2 md:px-7 md:py-2.5 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-full hover:bg-zinc-200 transition-all shadow-xl shadow-white/5 active:scale-95">
+            <button id="play-btn-nav" class="px-5 py-2 md:px-7 md:py-2.5 bg-white text-black text-[10px] font-bold uppercase tracking-widest rounded-full hover:bg-zinc-200 transition-all shadow-xl shadow-white/5 active:scale-95">
                 Let's Play
             </button>
         </div>
@@ -242,16 +254,12 @@
                     A clinical interactive arena where logic is your blade. Experience data structures as high-stakes systems in a cross-platform web matrix.
                 </p>
                 <div class="flex flex-col sm:flex-row gap-5 justify-center md:justify-start items-center">
+                    <button id="play-btn-hero" class="w-full sm:w-auto px-10 py-5 bg-white text-black rounded-2xl text-xs font-black uppercase tracking-[0.2em] transition-all hover:bg-zinc-200 active:scale-95 shadow-2xl shadow-white/5">
+                        Initiate Combat
+                    </button>
                     <button onclick="smoothScroll('#structures')" class="w-full sm:w-auto px-8 py-5 bg-zinc-900 border border-zinc-800 hover:border-zinc-500 rounded-2xl text-xs font-bold uppercase tracking-widest transition-all hover:bg-zinc-800 active:scale-95">
                         Access Registry
                     </button>
-                    <div class="flex items-center gap-4 px-2">
-                        <div class="relative w-8 h-8 rounded-full border border-zinc-800 bg-zinc-900 flex items-center justify-center">
-                            <div class="absolute inset-0 rounded-full border border-indigo-500/50 pulse-circle"></div>
-                            <div class="w-2 h-2 rounded-full bg-indigo-500"></div>
-                        </div>
-                        <span class="text-[10px] text-zinc-600 mono uppercase tracking-widest">Gravity™️ Tech Alpha</span>
-                    </div>
                 </div>
             </div>
 
@@ -453,10 +461,50 @@
         // Set dynamic year
         document.getElementById('year').textContent = new Date().getFullYear();
 
-        // Entry Sequence
-        window.addEventListener('load', () => {
+        const splash = document.getElementById('splash-screen');
+        const splashBar = document.getElementById('splash-bar');
+        const splashText = document.getElementById('splash-text');
+
+        /**
+         * Navigation Helper
+         * Prevents URL syntax errors by resolving relative paths correctly
+         */
+        const navigateTo = (path) => {
+            const url = new URL(path, window.location.origin + window.location.pathname);
+            window.location.assign(url.href);
+        };
+
+        /**
+         * System Entry Sequence
+         */
+        function initiateCombatProtocol() {
+            // Re-show splash with active loading
+            splash.classList.remove('hidden-splash');
+            splash.classList.add('visible-splash');
+            splashBar.style.animation = 'load 1.2s ease-in-out forwards';
+            splashText.innerText = 'Verifying_Identity_Signature...';
+
             setTimeout(() => {
-                document.getElementById('splash-screen').classList.add('hidden-splash');
+                const session = localStorage.getItem('matrix_user_session');
+                if (session) {
+                    splashText.innerText = 'Access_Granted // Entering_Arena';
+                    setTimeout(() => navigateTo('arena/index.html'), 800);
+                } else {
+                    splashText.innerText = 'Identity_Unknown // Redirecting_to_Terminal';
+                    setTimeout(() => navigateTo('auth/index.html'), 800);
+                }
+            }, 1500);
+        }
+
+        // Attach listeners to "Let's Play" gateways
+        document.getElementById('play-btn-nav').addEventListener('click', initiateCombatProtocol);
+        document.getElementById('play-btn-hero').addEventListener('click', initiateCombatProtocol);
+
+        // Initial Load Splash
+        window.addEventListener('load', () => {
+            splashBar.style.animation = 'load 1.5s ease-in-out forwards';
+            setTimeout(() => {
+                splash.classList.add('hidden-splash');
             }, 1800);
         });
 
@@ -483,14 +531,12 @@
         const navLinks = document.querySelectorAll('.nav-link');
 
         window.addEventListener('scroll', () => {
-            // Background Transition
             if (window.scrollY > 50) {
                 nav.classList.add('scrolled');
             } else {
                 nav.classList.remove('scrolled');
             }
 
-            // Scroll-Spy logic
             let currentSectionId = '';
             sections.forEach(section => {
                 const sectionTop = section.offsetTop;
@@ -525,7 +571,7 @@
 
         document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
 
-        // Interaction Handler: Parallax
+        // Interaction Handler: Parallax Mockup
         const mockup = document.querySelector('.phone-mockup');
         const container = document.querySelector('.phone-container');
 
@@ -546,7 +592,6 @@
             });
         }
 
-        // Global Event Delegation for Anchors
         document.querySelectorAll('.nav-link, a[href^="#"]').forEach(anchor => {
             anchor.addEventListener('click', function (e) {
                 const href = this.getAttribute('href');
