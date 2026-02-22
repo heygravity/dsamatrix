@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Protocol | DSA Matrix</title>
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%236366f1'/><circle cx='50' cy='50' r='20' fill='white'/><circle cx='25' cy='25' r='10' fill='white' opacity='0.5'/><circle cx='75' cy='75' r='10' fill='white' opacity='0.5'/></svg>">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050505;
+            --surface: #111111;
+            --accent: #6366f1;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            background-color: var(--bg);
+            color: #efefef;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            overflow-x: hidden;
+            scroll-behavior: smooth;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--border);
+            backdrop-filter: blur(20px);
+        }
+
+        /* --- System Splash --- */
+        #splash-screen {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: transform 1s cubic-bezier(0.87, 0, 0.13, 1), opacity 0.5s ease;
+        }
+
+        #splash-screen.hidden-splash {
+            transform: translateY(-100%);
+            pointer-events: none;
+        }
+
+        @keyframes progress-load {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
+        }
+
+        .splash-bar {
+            height: 1px;
+            width: 120px;
+            background: rgba(255,255,255,0.1);
+            margin-top: 1.5rem;
+            overflow: hidden;
+        }
+
+        .splash-progress {
+            height: 100%;
+            width: 100%;
+            background: white;
+            transform-origin: left;
+            transform: scaleX(0);
+            animation: progress-load 1.2s cubic-bezier(0.65, 0, 0.35, 1) forwards;
+        }
+
+        /* --- Navbar Architecture (Adaptive Landing Style) --- */
+        nav {
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .nav-container {
+            background-color: rgba(5, 5, 5, 0.4);
+            backdrop-filter: blur(15px);
+            border: 1px solid var(--border);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            width: 100%;
+        }
+
+        /* Scrolled State Logic: Force full width and remove offsets */
+        nav.scrolled {
+            padding-top: 0 !important;
+            padding-bottom: 0 !important;
+            padding-left: 0 !important;
+            padding-right: 0 !important;
+        }
+
+        nav.scrolled .nav-container {
+            max-width: 100% !important;
+            width: 100% !important;
+            margin-left: 0 !important;
+            margin-right: 0 !important;
+            border-radius: 0 !important;
+            border-left: none;
+            border-right: none;
+            border-top: none;
+            background-color: rgba(5, 5, 5, 0.98);
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+        }
+
+        @media (min-width: 768px) {
+            nav.scrolled .nav-container {
+                padding-left: 3rem;
+                padding-right: 3rem;
+            }
+        }
+
+        .nav-link {
+            position: relative;
+            padding-bottom: 2px;
+            transition: color 0.3s ease;
+        }
+
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            bottom: 0; left: 0; width: 0; height: 1px;
+            background: white;
+            transition: width 0.3s ease;
+        }
+
+        .nav-link:hover::after { width: 100%; }
+
+        /* --- Scroll Animations --- */
+        .reveal {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+
+        .reveal.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* --- Content Layout --- */
+        .protocol-section {
+            border-left: 2px solid var(--border);
+            padding-left: 2rem;
+            position: relative;
+        }
+
+        .protocol-section::before {
+            content: "";
+            position: absolute;
+            top: 0; left: -6px;
+            width: 10px; height: 10px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        .bg-grain::after {
+            content: "";
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-image: url("https://grainy-gradients.vercel.app/noise.svg");
+            opacity: 0.02;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+    </style>
+</head>
+<body class="bg-grain">
+
+    <!-- Splash Sequence -->
+    <div id="splash-screen">
+        <div class="text-center">
+            <h1 class="text-xl font-extrabold tracking-[0.4em] uppercase italic">Privacy_Protocol</h1>
+            <div class="splash-bar mx-auto">
+                <div class="splash-progress"></div>
+            </div>
+            <p class="mono text-[8px] text-zinc-600 uppercase tracking-[0.3em] mt-4">Decrypting_Terms_v1.0</p>
+        </div>
+    </div>
+
+    <!-- Header Navigation (Adaptive Frosted Style) -->
+    <nav id="main-nav" class="fixed top-0 w-full z-50 px-0 md:px-6 py-4 md:py-6">
+        <div class="nav-container max-w-6xl mx-auto flex justify-between items-center px-6 py-3 md:px-8 md:py-4 rounded-2xl md:rounded-[2rem] shadow-2xl">
+            <div class="flex items-center gap-3 group cursor-pointer" onclick="location.href='index.html'">
+                <div class="w-8 h-8 bg-white rounded-xl flex items-center justify-center rotate-3 group-hover:rotate-0 transition-all duration-500 shadow-lg shadow-white/5">
+                    <svg class="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
+                </div>
+                <span class="font-extrabold tracking-tighter text-lg md:text-xl uppercase">DSA Matrix</span>
+            </div>
+            
+            <div class="flex gap-10 text-[10px] mono font-semibold uppercase tracking-widest text-zinc-500">
+                <a href="../index.html" class="nav-link hover:text-white">Return_to_Home</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content Architecture -->
+    <main class="max-w-4xl mx-auto px-6 pt-40 pb-20 md:pt-56 md:pb-32">
+        
+        <header class="mb-24 reveal">
+            <h1 class="text-5xl md:text-7xl font-black tracking-tighter uppercase italic mb-6">
+                LEGAL <br><span class="text-zinc-700">PROTOCOLS.</span>
+            </h1>
+            <p class="mono text-[10px] text-indigo-400 uppercase tracking-[0.5em] mb-12">// System_Data_Integrity_Report</p>
+            <div class="h-[1px] w-full bg-zinc-900"></div>
+        </header>
+
+        <div class="space-y-32">
+            <!-- Section 01 -->
+            <section class="protocol-section reveal">
+                <h3 class="text-sm mono text-zinc-500 uppercase tracking-[0.4em] mb-8">Sector_01 // Data_Acquisition</h3>
+                <div class="space-y-6 text-zinc-400 text-lg font-light leading-relaxed">
+                    <p>To authorize access to the DSA Matrix, we acquire specific specialist credentials including:</p>
+                    <ul class="space-y-4 text-sm mono uppercase tracking-wider text-zinc-500">
+                        <li class="flex items-center gap-3"><span class="w-1 h-1 bg-white rounded-full"></span> Mobile Number (Authentication)</li>
+                        <li class="flex items-center gap-3"><span class="w-1 h-1 bg-white rounded-full"></span> Legal Name (Identity Profile)</li>
+                        <li class="flex items-center gap-3"><span class="w-1 h-1 bg-white rounded-full"></span> Date of Birth (Age Validation)</li>
+                        <li class="flex items-center gap-3"><span class="w-1 h-1 bg-white rounded-full"></span> Secure Email (Optional Channel)</li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Section 02 -->
+            <section class="protocol-section reveal">
+                <h3 class="text-sm mono text-zinc-500 uppercase tracking-[0.4em] mb-8">Sector_02 // Storage_Subsystems</h3>
+                <div class="space-y-6 text-zinc-400 text-lg font-light leading-relaxed">
+                    <p>Specialist data is processed and buffered through two primary logical layers:</p>
+                    <div class="grid md:grid-cols-2 gap-6 mt-8">
+                        <div class="glass p-6 rounded-2xl border-white/5">
+                            <h4 class="text-xs font-bold text-white uppercase mb-3 tracking-widest">Firestore Registry</h4>
+                            <p class="text-xs text-zinc-500 leading-relaxed">Cloud-based persistence for highscores and profile attributes, secured via Firebase authorization rules.</p>
+                        </div>
+                        <div class="glass p-6 rounded-2xl border-white/5">
+                            <h4 class="text-xs font-bold text-white uppercase mb-3 tracking-widest">Local Session Cache</h4>
+                            <p class="text-xs text-zinc-500 leading-relaxed">Browser-side storage used to maintain low-latency authentication and immediate profile availability.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Section 03 -->
+            <section class="protocol-section reveal">
+                <h3 class="text-sm mono text-zinc-500 uppercase tracking-[0.4em] mb-8">Sector_03 // Operational_Logic</h3>
+                <div class="space-y-6 text-zinc-400 text-lg font-light leading-relaxed">
+                    <p>Data within the Matrix is exclusively utilized for:</p>
+                    <ul class="space-y-4 text-sm text-zinc-300">
+                        <li class="flex items-start gap-4">
+                            <span class="text-indigo-400 font-bold">01.</span>
+                            <p>Calculating Combat Precision and ranking specialist performance across DSA modules.</p>
+                        </li>
+                        <li class="flex items-start gap-4">
+                            <span class="text-indigo-400 font-bold">02.</span>
+                            <p>Preventing system anomalies through age-gate synchronization (12-100 Specialist scale).</p>
+                        </li>
+                        <li class="flex items-start gap-4">
+                            <span class="text-indigo-400 font-bold">03.</span>
+                            <p>Ensuring cross-device identity stability via unique specialist identifiers.</p>
+                        </li>
+                    </ul>
+                </div>
+            </section>
+
+            <!-- Section 04 -->
+            <section class="protocol-section reveal">
+                <h3 class="text-sm mono text-zinc-500 uppercase tracking-[0.4em] mb-8">Sector_04 // User_Deauthorization</h3>
+                <div class="space-y-6 text-zinc-400 text-lg font-light leading-relaxed">
+                    <p>Every specialist retains full control over their logic bucket. You may request session termination or profile deletion at any point through the Hub's secure feedback terminal.</p>
+                    <p class="text-xs italic text-zinc-600 mt-4">Note: Deleting your Specialist Identity will result in permanent loss of all combat scores and level progression in the Matrix.</p>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Secure Footer -->
+    <footer class="py-12 border-t border-zinc-900 px-6 mt-20">
+        <div class="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+            <div class="text-[10px] mono text-zinc-600 tracking-widest uppercase">
+                &copy; <span id="year"></span> DSA_MATRIX | Gravity™️
+            </div>
+            <div class="flex gap-8 text-[10px] font-bold uppercase tracking-widest text-zinc-600">
+                <a href="#" class="hover:text-white transition-colors">Discord_Hub</a>
+                <a href="#" class="hover:text-white transition-colors">Git_Registry</a>
+                <a href="#" class="hover:text-white transition-colors">Security_Core</a>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Set dynamic year
+        document.getElementById('year').textContent = new Date().getFullYear();
+
+        // Navbar Scroll Controller
+        const nav = document.getElementById('main-nav');
+        window.addEventListener('scroll', () => {
+            if (window.scrollY > 50) {
+                nav.classList.add('scrolled');
+            } else {
+                nav.classList.remove('scrolled');
+            }
+        });
+
+        // Splash screen cleanup
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('splash-screen').classList.add('hidden-splash');
+            }, 1500);
+        });
+
+        // Scroll reveal observer
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal').forEach(el => revealObserver.observe(el));
+    </script>
+</body>
+</html>
