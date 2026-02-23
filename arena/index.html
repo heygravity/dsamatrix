@@ -14,6 +14,7 @@
             --bg: #050505;
             --surface: #111111;
             --accent: #6366f1;
+            --error: #ef4444;
             --border: rgba(255, 255, 255, 0.08);
             --chip-body: #18181b;
             --pin-color: #3f3f46;
@@ -35,6 +36,58 @@
             backdrop-filter: blur(20px);
         }
 
+        /* --- Protocol Menu --- */
+        .protocol-menu {
+            position: relative;
+            display: inline-block;
+        }
+
+        .protocol-dropdown {
+            position: absolute;
+            top: 100%;
+            right: 0;
+            margin-top: 0.5rem;
+            min-width: 180px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+            z-index: 100;
+        }
+
+        /* Desktop Hover Logic */
+        @media (min-width: 1024px) {
+            .protocol-menu:hover .protocol-dropdown {
+                opacity: 1;
+                visibility: visible;
+                transform: translateY(0);
+            }
+        }
+
+        /* Click Logic Class */
+        .protocol-dropdown.active {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        /* --- Modal Architecture --- */
+        #confirmation-modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(10px);
+            z-index: 2000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        #confirmation-modal.active {
+            display: flex;
+        }
+
         /* --- Logic Chip Card Design --- */
         .logic-chip {
             position: relative;
@@ -51,14 +104,6 @@
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        @media (min-width: 768px) {
-            .logic-chip {
-                padding: 24px;
-                gap: 16px;
-            }
-        }
-
-        /* IC Pins Styling - Adjusted for mobile spacing */
         .logic-chip::before, .logic-chip::after {
             content: "";
             position: absolute;
@@ -78,12 +123,8 @@
             background-size: 100% 40px;
         }
 
-        .logic-chip::after {
-            left: auto;
-            right: -6px;
-        }
+        .logic-chip::after { left: auto; right: -6px; }
 
-        /* Chip Etched Surface */
         .chip-surface {
             position: relative;
             background: #09090b;
@@ -98,14 +139,6 @@
             justify-content: center;
         }
 
-        @media (min-width: 768px) {
-            .chip-surface {
-                padding: 16px;
-                height: 120px;
-            }
-        }
-
-        /* Circuit Pattern Overlay */
         .circuit-lines {
             position: absolute;
             inset: 0;
@@ -124,26 +157,8 @@
             box-shadow: 0 20px 40px -10px rgba(99, 102, 241, 0.3);
         }
 
-        .logic-chip:hover .chip-surface {
-            border-color: rgba(99, 102, 241, 0.4);
-        }
-
-        .logic-chip:hover .circuit-lines {
-            opacity: 0.2;
-        }
-
-        .led {
-            width: 4px;
-            height: 4px;
-            border-radius: 50%;
-            background: #3f3f46;
-            transition: all 0.3s ease;
-        }
-
-        .logic-chip:hover .led.active {
-            background: var(--accent);
-            box-shadow: 0 0 8px var(--accent);
-        }
+        .led { width: 4px; height: 4px; border-radius: 50%; background: #3f3f46; transition: all 0.3s ease; }
+        .logic-chip:hover .led.active { background: var(--accent); box-shadow: 0 0 8px var(--accent); }
 
         /* Specialist Avatar */
         .avatar-frame {
@@ -152,10 +167,6 @@
             background: linear-gradient(135deg, var(--accent), transparent);
             border-radius: 50%;
             transition: transform 0.6s cubic-bezier(0.23, 1, 0.32, 1);
-        }
-
-        .avatar-frame:hover {
-            transform: scale(1.05) rotate(5deg);
         }
 
         .avatar-inner {
@@ -168,14 +179,6 @@
             display: flex;
             align-items: center;
             justify-content: center;
-        }
-
-        @media (min-width: 640px) {
-            .avatar-inner { width: 120px; height: 120px; }
-        }
-
-        @media (min-width: 1024px) {
-            .avatar-inner { width: 160px; height: 160px; }
         }
 
         .bg-grain::after {
@@ -199,25 +202,7 @@
             max-width: 400px;
         }
 
-        @media (min-width: 768px) {
-            #notification {
-                left: auto;
-                right: 2rem;
-                transform: translateY(120px);
-                width: 280px;
-            }
-            #notification.active { transform: translateY(0); }
-        }
-
         #notification.active { transform: translateX(-50%) translateY(0); }
-        @media (min-width: 768px) {
-            #notification.active { transform: translateX(0) translateY(0); }
-        }
-
-        /* Prevent layout shift during profile load */
-        #profile-display {
-            min-height: 200px;
-        }
     </style>
 </head>
 <body class="bg-grain">
@@ -230,11 +215,47 @@
             </div>
             <span class="font-extrabold tracking-tighter uppercase text-[10px] md:text-sm">Matrix Arena Hub</span>
         </div>
-        <button id="logout-btn" class="text-[9px] md:text-[10px] mono uppercase tracking-widest text-zinc-500 hover:text-white transition-colors p-2">Terminate_Session</button>
+        
+        <!-- Protocol Menu -->
+        <div class="protocol-menu">
+            <button id="menu-trigger" class="flex items-center gap-2 text-[9px] md:text-[10px] mono uppercase tracking-widest text-zinc-500 hover:text-white transition-colors p-2 bg-white/5 rounded-lg border border-white/5">
+                System_Protocol
+                <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
+            </button>
+            <div id="protocol-dropdown" class="protocol-dropdown glass p-2 rounded-xl border border-white/10 shadow-2xl">
+                <button id="logout-btn" class="w-full text-left px-4 py-3 rounded-lg text-[9px] mono uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-white/5 transition-all">
+                    Terminate_Session
+                </button>
+                <div class="h-[1px] w-full bg-white/5 my-1"></div>
+                <button id="delete-trigger" class="w-full text-left px-4 py-3 rounded-lg text-[9px] mono uppercase tracking-widest text-red-500 hover:text-white hover:bg-red-500/10 transition-all">
+                    Purge_Identity
+                </button>
+            </div>
+        </div>
     </nav>
 
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal">
+        <div class="glass max-w-sm w-full p-8 md:p-10 rounded-[2.5rem] border-t-4 border-t-red-500 shadow-2xl space-y-8 text-center">
+            <div class="space-y-2">
+                <h2 class="text-2xl font-black tracking-tighter uppercase italic text-white">Identity Purge</h2>
+                <p class="text-red-400 mono text-[10px] uppercase tracking-[0.3em]">Warning: Critical_Decision</p>
+            </div>
+            <div class="bg-red-500/5 border border-red-500/20 p-4 rounded-2xl text-xs text-zinc-400 leading-relaxed">
+                Confirming this protocol will <span class="text-white font-bold">permanently delete all combat data</span>, highscores, and registry credentials. This action cannot be reversed.
+            </div>
+            <div class="flex flex-col gap-3">
+                <button id="confirm-delete" class="w-full py-4 bg-red-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] hover:bg-red-600 transition-all active:scale-95">
+                    Execute Purge
+                </button>
+                <button id="cancel-delete" class="w-full py-4 bg-white/5 text-zinc-500 rounded-2xl font-bold uppercase text-[10px] tracking-[0.2em] hover:text-white transition-all">
+                    Abort Protocol
+                </button>
+            </div>
+        </div>
+    </div>
+
     <main class="max-w-7xl mx-auto px-4 md:px-8 py-8 md:py-12">
-        
         <!-- Profile Section -->
         <section id="profile-display" class="flex flex-col md:flex-row items-center md:items-end gap-6 md:gap-8 mb-16 md:mb-24 opacity-0 transition-all duration-1000 transform translate-y-4">
             <div class="avatar-frame">
@@ -274,33 +295,37 @@
                 <h2 class="text-[9px] md:text-[10px] mono text-zinc-600 uppercase tracking-[0.6em]">Logic_Combat_Modules</h2>
                 <div class="h-[1px] flex-1 bg-zinc-900"></div>
             </div>
-
-            <div id="module-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-10">
-                <!-- Modules will be injected by JavaScript -->
-            </div>
+            <div id="module-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 md:gap-10"></div>
         </section>
-
     </main>
 
     <!-- Notification Toast -->
-    <div id="notification" class="glass px-6 py-4 rounded-2xl flex items-center gap-4 border-l-4 border-l-indigo-500 shadow-2xl">
-        <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+    <div id="notification" class="glass px-6 py-4 rounded-2xl flex items-center gap-4 border-l-4 border-l-indigo-500 min-w-[280px] max-w-[90%] shadow-2xl">
+        <div id="notif-led" class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
         <span id="notification-text" class="text-[10px] font-bold tracking-wider text-zinc-200 uppercase">Arena Connected</span>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
-        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { firebaseConfig } from "../script/base.js";
+        import { getAuth, onAuthStateChanged, signOut, deleteUser } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import {firebaseConfig} from '../script/base.js';
 
-        // Firebase Config
+        // Config
         //const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
         // UI Selectors
+        const menuTrigger = document.getElementById('menu-trigger');
+        const dropdown = document.getElementById('protocol-dropdown');
+        const logoutBtn = document.getElementById('logout-btn');
+        const deleteTrigger = document.getElementById('delete-trigger');
+        const confirmModal = document.getElementById('confirmation-modal');
+        const confirmDeleteBtn = document.getElementById('confirm-delete');
+        const cancelDeleteBtn = document.getElementById('cancel-delete');
+        
         const displayName = document.getElementById('display-name');
         const displayDob = document.getElementById('display-dob');
         const displayEmail = document.getElementById('display-email');
@@ -308,46 +333,28 @@
         const displayTotalExp = document.getElementById('display-total-exp');
         const profileSection = document.getElementById('profile-display');
         const moduleGrid = document.getElementById('module-grid');
-        const logoutBtn = document.getElementById('logout-btn');
-        const notification = document.getElementById('notification');
         const notificationText = document.getElementById('notification-text');
 
         const MODULE_REGISTRY = [
-            {
-                id: 'bst',
-                title: 'BST_Stabilizer',
-                concept: 'Hierarchical Trees',
-                active: true,
-                url: 'bst_stabilizer/index.html',
-                graphic: `<svg viewBox="0 0 100 60" class="w-full h-12 max-h-full"><path d="M50 10 L30 35 M50 10 L70 35" stroke="currentColor" stroke-width="1.5" /><circle cx="50" cy="10" r="5" fill="currentColor"/><circle cx="30" cy="35" r="5" fill="currentColor" opacity="0.4"/><circle cx="70" cy="35" r="5" fill="#6366f1"/></svg>`
-            },
-            {
-                id: 'list',
-                title: 'Chain_Persist',
-                concept: 'Linked Lists',
-                active: false,
-                graphic: `<svg viewBox="0 0 100 60" class="w-full h-10 max-h-full"><rect x="10" y="25" width="15" height="10" rx="1" fill="currentColor"/><rect x="42.5" y="25" width="15" height="10" rx="1" fill="currentColor"/><rect x="75" y="25" width="15" height="10" rx="1" fill="currentColor"/><path d="M25 30 L42.5 30 M57.5 30 L75 30" stroke="currentColor" stroke-width="2" stroke-dasharray="2"/></svg>`
-            },
-            {
-                id: 'graph',
-                title: 'Path_Navigator',
-                concept: 'Graph Networks',
-                active: false,
-                graphic: `<svg viewBox="0 0 100 60" class="w-full h-10 max-h-full"><circle cx="20" cy="15" r="4" fill="currentColor"/><circle cx="80" cy="15" r="4" fill="currentColor"/><circle cx="50" cy="45" r="4" fill="currentColor"/><path d="M24 15 L76 15 M23 18 L47 43 M77 18 L53 43" stroke="currentColor" stroke-width="1" opacity="0.3"/></svg>`
-            },
-            {
-                id: 'stack',
-                title: 'Stack_Overflow',
-                concept: 'LIFO Buffers',
-                active: false,
-                graphic: `<svg viewBox="0 0 100 60" class="w-full h-10 max-h-full"><rect x="35" y="10" width="30" height="6" fill="#6366f1"/><rect x="35" y="20" width="30" height="6" fill="currentColor" opacity="0.6"/><rect x="35" y="30" width="30" height="6" fill="currentColor" opacity="0.3"/><path d="M30 5 V 45 H 70 V 5" fill="none" stroke="currentColor" stroke-width="2"/></svg>`
-            }
+            { id: 'bst', title: 'BST_Stabilizer', concept: 'Hierarchical Trees', active: true, url: 'bst_stabilizer/index.html', graphic: `<svg viewBox="0 0 100 60" class="w-full h-12"><path d="M50 10 L30 35 M50 10 L70 35" stroke="currentColor" stroke-width="1.5" /><circle cx="50" cy="10" r="5" fill="currentColor"/><circle cx="30" cy="35" r="5" fill="currentColor" opacity="0.4"/><circle cx="70" cy="35" r="5" fill="#6366f1"/></svg>` },
+            { id: 'list', title: 'Chain_Persist', concept: 'Linked Lists', active: false, graphic: `<svg viewBox="0 0 100 60" class="w-full h-10"><rect x="10" y="25" width="15" height="10" rx="1" fill="currentColor"/><rect x="42.5" y="25" width="15" height="10" rx="1" fill="currentColor"/><rect x="75" y="25" width="15" height="10" rx="1" fill="currentColor"/><path d="M25 30 L42.5 30 M57.5 30 L75 30" stroke="currentColor" stroke-width="2" stroke-dasharray="2"/></svg>` },
+            { id: 'graph', title: 'Path_Navigator', concept: 'Graph Networks', active: false, graphic: `<svg viewBox="0 0 100 60" class="w-full h-10"><circle cx="20" cy="15" r="4" fill="currentColor"/><circle cx="80" cy="15" r="4" fill="currentColor"/><circle cx="50" cy="45" r="4" fill="currentColor"/><path d="M24 15 L76 15 M23 18 L47 43 M77 18 L53 43" stroke="currentColor" stroke-width="1" opacity="0.3"/></svg>` },
+            { id: 'stack', title: 'Stack_Overflow', concept: 'LIFO Buffers', active: false, graphic: `<svg viewBox="0 0 100 60" class="w-full h-10"><rect x="35" y="10" width="30" height="6" fill="#6366f1"/><rect x="35" y="20" width="30" height="6" fill="currentColor" opacity="0.6"/><rect x="35" y="30" width="30" height="6" fill="currentColor" opacity="0.3"/><path d="M30 5 V 45 H 70 V 5" fill="none" stroke="currentColor" stroke-width="2"/></svg>` }
         ];
 
-        function notify(message) {
+        // --- Menu Logic ---
+        menuTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            dropdown.classList.toggle('active');
+        });
+
+        document.addEventListener('click', () => dropdown.classList.remove('active'));
+
+        function notify(message, type = 'status') {
             notificationText.innerText = message;
-            notification.classList.add('active');
-            setTimeout(() => notification.classList.remove('active'), 4000);
+            document.getElementById('notif-led').className = `w-2 h-2 rounded-full ${type === 'error' ? 'bg-red-500' : 'bg-indigo-500'} animate-pulse`;
+            document.getElementById('notification').classList.add('active');
+            setTimeout(() => document.getElementById('notification').classList.remove('active'), 4000);
         }
 
         const navigateTo = (path) => {
@@ -355,6 +362,7 @@
             window.location.assign(url.href);
         };
 
+        // --- Auth Logic ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const cached = localStorage.getItem('matrix_user_session');
@@ -372,58 +380,30 @@
 
         async function fetchRegistryData(uid) {
             try {
-                // RULE 1: Direct access path to specialist profile
                 const profileRef = doc(db, 'artifacts', uid, 'profile', 'data');
                 const snap = await getDoc(profileRef);
-
                 if (snap.exists()) {
                     let data = snap.data();
-                    let updated = false;
-
-                    if (!data.scores) {
-                        data.scores = {};
-                        updated = true;
-                    }
-
-                    MODULE_REGISTRY.forEach(mod => {
-                        if (data.scores[mod.id] === undefined) {
-                            data.scores[mod.id] = 0;
-                            updated = true;
-                        }
-                    });
-
-                    if (updated) {
-                        await updateDoc(profileRef, { scores: data.scores });
-                    }
-
                     updateProfileUI(data);
                     localStorage.setItem('matrix_user_session', JSON.stringify({ uid, ...data }));
                 } else {
                     navigateTo('../auth/index.html');
                 }
             } catch (err) {
-                console.error("Registry sync error:", err);
-                notify("ERR: LOG_SYNC_INTERRUPTED");
+                notify("ERR: LOG_SYNC_INTERRUPTED", "error");
             }
         }
 
         function updateProfileUI(data) {
             displayName.innerText = data.name || "LOGIC_CADET";
             displayDob.innerText = data.dob || "--/--/----";
-            
             if (data.email) {
                 displayEmail.innerText = data.email;
                 emailTag.classList.remove('hidden');
-            } else {
-                emailTag.classList.add('hidden');
             }
-
             const scores = data.scores || {};
-            const total = Object.values(scores).reduce((a, b) => Number(a) + Number(b), 0);
-            displayTotalExp.innerText = total;
-
+            displayTotalExp.innerText = Object.values(scores).reduce((a, b) => Number(a) + Number(b), 0);
             renderChips(scores);
-            
             profileSection.classList.remove('opacity-0', 'translate-y-4');
             profileSection.classList.add('opacity-100', 'translate-y-0');
         }
@@ -435,55 +415,59 @@
                 const chip = document.createElement('div');
                 chip.className = `logic-chip group ${!mod.active ? 'opacity-60 grayscale-[0.5]' : ''}`;
                 chip.innerHTML = `
-                    <div class="flex justify-between items-start">
-                        <div class="flex gap-1">
-                            <div class="led active bg-zinc-600"></div>
-                            <div class="led ${mod.active ? 'active' : ''}"></div>
-                        </div>
-                        <span class="text-[8px] mono text-zinc-600">REV.0${index + 1}</span>
-                    </div>
-                    <div class="chip-surface">
-                        <div class="circuit-lines"></div>
-                        <div class="relative z-10 text-zinc-400 group-hover:text-white transition-colors h-full flex items-center justify-center">
-                            ${mod.graphic}
-                        </div>
-                    </div>
-                    <div class="space-y-1 relative z-10">
-                        <h3 class="text-[10px] md:text-[11px] font-black uppercase tracking-tighter text-white">${mod.title}</h3>
-                        <p class="text-[7px] mono text-zinc-500 uppercase">${mod.concept}</p>
-                    </div>
-                    <div class="flex justify-between items-end border-t border-zinc-800 pt-3 mt-1">
-                        <div class="flex flex-col">
-                            <span class="text-[7px] mono text-zinc-600 uppercase">Highscore</span>
-                            <span class="text-[10px] font-black text-indigo-400">${score}</span>
-                        </div>
-                        <div class="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center group-hover:bg-indigo-600 transition-colors">
-                            ${mod.active ? '<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>' : '<svg class="w-3 h-3 text-zinc-600" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8V7a4 4 0 00-8 0v1H5v11h14V8h-1zm-6-3a2 2 0 012 2v1h-4V7a2 2 0 012-2z"/></svg>'}
-                        </div>
-                    </div>
+                    <div class="flex justify-between items-start"><div class="flex gap-1"><div class="led active bg-zinc-600"></div><div class="led ${mod.active ? 'active' : ''}"></div></div><span class="text-[8px] mono text-zinc-600">REV.0${index + 1}</span></div>
+                    <div class="chip-surface"><div class="circuit-lines"></div><div class="relative z-10 text-zinc-400 group-hover:text-white transition-colors h-full flex items-center justify-center">${mod.graphic}</div></div>
+                    <div class="space-y-1 relative z-10"><h3 class="text-[10px] font-black uppercase tracking-tighter text-white">${mod.title}</h3><p class="text-[7px] mono text-zinc-500 uppercase">${mod.concept}</p></div>
+                    <div class="flex justify-between items-end border-t border-zinc-800 pt-3 mt-1"><div class="flex flex-col"><span class="text-[7px] mono text-zinc-600 uppercase">Highscore</span><span class="text-[10px] font-black text-indigo-400">${score}</span></div><div class="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center group-hover:bg-indigo-600 transition-colors">${mod.active ? '<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>' : '<svg class="w-3 h-3 text-zinc-600" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8V7a4 4 0 00-8 0v1H5v11h14V8h-1zm-6-3a2 2 0 012 2v1h-4V7a2 2 0 012-2z"/></svg>'}</div></div>
                 `;
-
                 chip.addEventListener('click', () => {
-                    if (mod.active) {
-                        navigateTo(mod.url);
-                    } else {
-                        notify(`NOTICE: ${mod.title} UNDER ENCRYPTION // COMING SOON`);
-                    }
+                    if (mod.active) navigateTo(mod.url);
+                    else notify(`NOTICE: ${mod.title} UNDER ENCRYPTION // COMING SOON`);
                 });
-
                 moduleGrid.appendChild(chip);
             });
         }
 
-        // Session Termination
+        // --- Protocol Execution ---
         logoutBtn.addEventListener('click', async () => {
             try {
                 await signOut(auth);
                 localStorage.removeItem('matrix_user_session');
                 notify("PROTOCOL: TERMINATING_CONNECTION");
                 setTimeout(() => navigateTo('../auth/index.html'), 1000);
+            } catch (err) { notify("ERR: DISCONNECT_FAILED", "error"); }
+        });
+
+        deleteTrigger.addEventListener('click', () => confirmModal.classList.add('active'));
+        cancelDeleteBtn.addEventListener('click', () => confirmModal.classList.remove('active'));
+
+        confirmDeleteBtn.addEventListener('click', async () => {
+            const user = auth.currentUser;
+            if (!user) return;
+            confirmDeleteBtn.disabled = true;
+            confirmDeleteBtn.innerText = "PURGING...";
+
+            try {
+                // RULE 1: Direct path purge
+                const profileRef = doc(db, 'artifacts', user.uid, 'profile', 'data');
+                await deleteDoc(profileRef);
+                
+                // Auth Purge
+                await deleteUser(user);
+                
+                localStorage.removeItem('matrix_user_session');
+                notify("PROTOCOL: IDENTITY_PURGED // SYSTEM_RESET", "error");
+                setTimeout(() => navigateTo('../auth/index.html'), 1500);
             } catch (err) {
-                notify("ERR: DISCONNECT_FAILED");
+                console.error(err);
+                if (err.code === 'auth/requires-recent-login') {
+                    notify("ERR: RE-AUTHENTICATION_REQUIRED", "error");
+                    setTimeout(() => navigateTo('../auth/index.html'), 1500);
+                } else {
+                    notify("ERR: PURGE_FAILED", "error");
+                    confirmDeleteBtn.disabled = false;
+                    confirmDeleteBtn.innerText = "Execute Purge";
+                }
             }
         });
     </script>
