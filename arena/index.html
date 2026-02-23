@@ -47,7 +47,7 @@
             top: 100%;
             right: 0;
             margin-top: 0.5rem;
-            min-width: 180px;
+            min-width: 200px;
             opacity: 0;
             visibility: hidden;
             transform: translateY(-10px);
@@ -55,7 +55,6 @@
             z-index: 100;
         }
 
-        /* Desktop Hover Logic */
         @media (min-width: 1024px) {
             .protocol-menu:hover .protocol-dropdown {
                 opacity: 1;
@@ -64,7 +63,6 @@
             }
         }
 
-        /* Click Logic Class */
         .protocol-dropdown.active {
             opacity: 1;
             visibility: visible;
@@ -72,11 +70,11 @@
         }
 
         /* --- Modal Architecture --- */
-        #confirmation-modal {
+        #confirmation-modal, #edit-modal {
             position: fixed;
             inset: 0;
-            background: rgba(0, 0, 0, 0.9);
-            backdrop-filter: blur(10px);
+            background: rgba(0, 0, 0, 0.85); /* Increased opacity for background visibility */
+            backdrop-filter: blur(12px);
             z-index: 2000;
             display: none;
             align-items: center;
@@ -84,9 +82,50 @@
             padding: 1.5rem;
         }
 
-        #confirmation-modal.active {
+        #confirmation-modal.active, #edit-modal.active {
             display: flex;
         }
+
+        /* --- Form Styling (Replicated from Auth) --- */
+        input {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid var(--border) !important;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        input:focus {
+            border-color: var(--accent) !important;
+            background: rgba(255, 255, 255, 0.06) !important;
+            outline: none;
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
+        }
+
+        input.invalid { border-color: var(--error) !important; }
+
+        .error-msg {
+            color: var(--error);
+            font-size: 9px;
+            font-family: 'JetBrains Mono', monospace;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            margin-top: 4px;
+            margin-left: 4px;
+            opacity: 0;
+            transform: translateY(-5px);
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .error-msg.visible { opacity: 1; transform: translateY(0); }
+
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-8px); }
+            75% { transform: translateX(8px); }
+        }
+
+        .error-shake { animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
 
         /* --- Logic Chip Card Design --- */
         .logic-chip {
@@ -216,13 +255,15 @@
             <span class="font-extrabold tracking-tighter uppercase text-[10px] md:text-sm">Matrix Arena Hub</span>
         </div>
         
-        <!-- Protocol Menu -->
         <div class="protocol-menu">
             <button id="menu-trigger" class="flex items-center gap-2 text-[9px] md:text-[10px] mono uppercase tracking-widest text-zinc-500 hover:text-white transition-colors p-2 bg-white/5 rounded-lg border border-white/5">
                 System_Protocol
                 <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
             </button>
             <div id="protocol-dropdown" class="protocol-dropdown glass p-2 rounded-xl border border-white/10 shadow-2xl">
+                <button id="edit-trigger" class="w-full text-left px-4 py-3 rounded-lg text-[9px] mono uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-white/5 transition-all">
+                    Edit_Registry
+                </button>
                 <button id="logout-btn" class="w-full text-left px-4 py-3 rounded-lg text-[9px] mono uppercase tracking-widest text-zinc-400 hover:text-white hover:bg-white/5 transition-all">
                     Terminate_Session
                 </button>
@@ -234,6 +275,44 @@
         </div>
     </nav>
 
+    <!-- Account Edit Modal -->
+    <div id="edit-modal">
+        <div id="edit-card" class="glass p-8 md:p-10 rounded-[3rem] w-full max-w-md mx-6 space-y-6 overflow-y-auto max-h-[90vh] shadow-2xl border-t border-white/10">
+            <div class="text-center">
+                <h2 class="text-xl font-black tracking-tighter uppercase italic text-white">Registry Modification</h2>
+                <p class="text-zinc-500 text-[9px] mono uppercase tracking-[0.3em]">Updating_Identity_Parameters</p>
+            </div>
+            
+            <div class="space-y-4">
+                <div class="space-y-1">
+                    <label class="text-[9px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Specialist Name</label>
+                    <input type="text" id="edit-name" class="w-full rounded-2xl px-6 py-4 bg-zinc-900 border border-zinc-800 text-sm" placeholder="John Doe">
+                    <p id="error-name" class="error-msg">Require First & Last Name</p>
+                </div>
+                <!-- Mobile number removed as per request -->
+                <div class="space-y-1">
+                    <label class="text-[9px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Date of Birth (DD-MM-YYYY)</label>
+                    <input type="text" id="edit-dob" maxlength="10" class="w-full rounded-2xl px-6 py-4 bg-zinc-900 border border-zinc-800 text-sm mono" placeholder="15-08-1995">
+                    <p id="error-dob" class="error-msg">Age must be between 12 and 100</p>
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[9px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Secure Channel (Email)</label>
+                    <input type="email" id="edit-email" class="w-full rounded-2xl px-6 py-4 bg-zinc-900 border border-zinc-800 text-sm" placeholder="recruit@matrix.io">
+                    <p id="error-email" class="error-msg">Invalid transmission format</p>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-3 pt-4">
+                <button id="save-edit" class="w-full py-5 bg-white text-black rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-zinc-200 transition-all shadow-xl active:scale-95">
+                    Commit Changes
+                </button>
+                <button id="cancel-edit" class="w-full py-4 text-zinc-500 text-[10px] font-bold uppercase tracking-widest hover:text-white transition-colors">
+                    Discard_Protocol
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Confirmation Modal -->
     <div id="confirmation-modal">
         <div class="glass max-w-sm w-full p-8 md:p-10 rounded-[2.5rem] border-t-4 border-t-red-500 shadow-2xl space-y-8 text-center">
@@ -241,8 +320,8 @@
                 <h2 class="text-2xl font-black tracking-tighter uppercase italic text-white">Identity Purge</h2>
                 <p class="text-red-400 mono text-[10px] uppercase tracking-[0.3em]">Warning: Critical_Decision</p>
             </div>
-            <div class="bg-red-500/5 border border-red-500/20 p-4 rounded-2xl text-xs text-zinc-400 leading-relaxed">
-                Confirming this protocol will <span class="text-white font-bold">permanently delete all combat data</span>, highscores, and registry credentials. This action cannot be reversed.
+            <div class="bg-red-500/5 border border-red-500/20 p-4 rounded-2xl text-xs text-zinc-400 leading-relaxed text-left">
+                Confirming this protocol will <span class="text-white font-bold">permanently delete all combat data</span>, highscores, and registry credentials.
             </div>
             <div class="flex flex-col gap-3">
                 <button id="confirm-delete" class="w-full py-4 bg-red-500 text-white rounded-2xl font-black uppercase text-[10px] tracking-[0.3em] hover:bg-red-600 transition-all active:scale-95">
@@ -276,20 +355,21 @@
                 </div>
 
                 <div class="flex flex-wrap justify-center md:justify-start gap-3 md:gap-4">
+                    <div class="glass px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-[8px] md:text-[9px] mono text-zinc-400 uppercase border-white/5 flex items-center gap-2">
+                        <div id="role-icon"></div>
+                        ROLE: <span id="display-role" class="text-indigo-400 font-bold">---</span>
+                    </div>
                     <div class="glass px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-[8px] md:text-[9px] mono text-zinc-400 uppercase border-white/5 whitespace-nowrap">
                         DOB: <span id="display-dob" class="text-white">--/--/----</span>
                     </div>
-                    <div id="email-tag" class="hidden glass px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-[8px] md:text-[9px] mono text-zinc-400 uppercase border-white/5 max-w-xs overflow-hidden text-ellipsis whitespace-nowrap">
-                        COMMS: <span id="display-email" class="text-white">---</span>
-                    </div>
                     <div class="bg-indigo-500/10 border border-indigo-500/30 px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-[8px] md:text-[9px] mono text-indigo-400 uppercase">
-                        TOTAL_EXP: <span id="display-total-exp" class="text-white font-black">0</span>
+                        COMBAT_EXP: <span id="display-total-exp" class="text-white font-black">0</span>
                     </div>
                 </div>
             </div>
         </section>
 
-        <!-- Logic Chips Registry -->
+        <!-- Module Grid -->
         <section class="space-y-8 md:space-y-12">
             <div class="flex items-center gap-4 md:gap-6">
                 <h2 class="text-[9px] md:text-[10px] mono text-zinc-600 uppercase tracking-[0.6em]">Logic_Combat_Modules</h2>
@@ -299,7 +379,7 @@
         </section>
     </main>
 
-    <!-- Notification Toast -->
+    <!-- Notification -->
     <div id="notification" class="glass px-6 py-4 rounded-2xl flex items-center gap-4 border-l-4 border-l-indigo-500 min-w-[280px] max-w-[90%] shadow-2xl">
         <div id="notif-led" class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
         <span id="notification-text" class="text-[10px] font-bold tracking-wider text-zinc-200 uppercase">Arena Connected</span>
@@ -311,7 +391,6 @@
         import { getFirestore, doc, getDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import {firebaseConfig} from '../script/base.js';
 
-        // Config
         //const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
@@ -323,17 +402,33 @@
         const logoutBtn = document.getElementById('logout-btn');
         const deleteTrigger = document.getElementById('delete-trigger');
         const confirmModal = document.getElementById('confirmation-modal');
-        const confirmDeleteBtn = document.getElementById('confirm-delete');
-        const cancelDeleteBtn = document.getElementById('cancel-delete');
+        const editModal = document.getElementById('edit-modal');
+        const editTrigger = document.getElementById('edit-trigger');
         
         const displayName = document.getElementById('display-name');
         const displayDob = document.getElementById('display-dob');
-        const displayEmail = document.getElementById('display-email');
-        const emailTag = document.getElementById('email-tag');
+        const displayRole = document.getElementById('display-role');
         const displayTotalExp = document.getElementById('display-total-exp');
         const profileSection = document.getElementById('profile-display');
         const moduleGrid = document.getElementById('module-grid');
         const notificationText = document.getElementById('notification-text');
+
+        // Edit Form Selectors
+        const editName = document.getElementById('edit-name');
+        const editDob = document.getElementById('edit-dob');
+        const editEmail = document.getElementById('edit-email');
+        const saveEditBtn = document.getElementById('save-edit');
+        const cancelEditBtn = document.getElementById('cancel-edit');
+
+        const ROLE_CONFIG = {
+            'cs_student': { label: 'CS_STUDENT', icon: `<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 7l11 5 11-5-11-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>` },
+            'engineering_student': { label: 'ENG_STUDENT', icon: `<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6-3.8 3.8L11 11.5a1 1 0 0 0-1.4 0l-4 4a1 1 0 0 0 1.4 1.4l3.3-3.3 1.5 1.5a1 1 0 0 0 1.4 0l4.5-4.5 1.6 1.6a1 1 0 0 0 1.4-1.4l-3-3a1 1 0 0 0-1.4 0z"/></svg>` },
+            'software_dev': { label: 'SW_ARCHITECT', icon: `<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>` },
+            'competitive_prog': { label: 'LOGIC_COMBATANT', icon: `<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>` },
+            'dsa_educator': { label: 'SYSTEM_INSTRUCTOR', icon: `<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>` },
+            'hobbyist': { label: 'SPECIALIST', icon: `<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>` },
+            'other': { label: 'UNCLASSIFIED', icon: `<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M11 15h2v2h-2zm0-8h2v6h-2zM12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>` }
+        };
 
         const MODULE_REGISTRY = [
             { id: 'bst', title: 'BST_Stabilizer', concept: 'Hierarchical Trees', active: true, url: 'bst_stabilizer/index.html', graphic: `<svg viewBox="0 0 100 60" class="w-full h-12"><path d="M50 10 L30 35 M50 10 L70 35" stroke="currentColor" stroke-width="1.5" /><circle cx="50" cy="10" r="5" fill="currentColor"/><circle cx="30" cy="35" r="5" fill="currentColor" opacity="0.4"/><circle cx="70" cy="35" r="5" fill="#6366f1"/></svg>` },
@@ -342,40 +437,82 @@
             { id: 'stack', title: 'Stack_Overflow', concept: 'LIFO Buffers', active: false, graphic: `<svg viewBox="0 0 100 60" class="w-full h-10"><rect x="35" y="10" width="30" height="6" fill="#6366f1"/><rect x="35" y="20" width="30" height="6" fill="currentColor" opacity="0.6"/><rect x="35" y="30" width="30" height="6" fill="currentColor" opacity="0.3"/><path d="M30 5 V 45 H 70 V 5" fill="none" stroke="currentColor" stroke-width="2"/></svg>` }
         ];
 
-        // --- Menu Logic ---
-        menuTrigger.addEventListener('click', (e) => {
-            e.stopPropagation();
-            dropdown.classList.toggle('active');
+        // --- Validation Logic (Auth Parity) ---
+        const validators = {
+            name: (val) => val.trim().split(' ').length >= 2,
+            email: (val) => !val || /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val),
+            dob: (val) => {
+                if (!/^\d{2}-\d{2}-\d{4}$/.test(val)) return false;
+                const [d, m, y] = val.split('-').map(Number);
+                const birth = new Date(y, m - 1, d);
+                const age = new Date().getFullYear() - y;
+                return age >= 12 && age <= 100 && !isNaN(birth.getTime());
+            }
+        };
+
+        function validateEditForm() {
+            const isNameOk = validators.name(editName.value);
+            const isDobOk = validators.dob(editDob.value);
+            const isEmailOk = validators.email(editEmail.value);
+
+            document.getElementById('error-name').classList.toggle('visible', !isNameOk && editName.value.length > 0);
+            document.getElementById('error-dob').classList.toggle('visible', !isDobOk && editDob.value.length === 10);
+            document.getElementById('error-email').classList.toggle('visible', !isEmailOk && editEmail.value.length > 0);
+
+            saveEditBtn.disabled = !(isNameOk && isDobOk && isEmailOk);
+        }
+
+        // --- Menu & Modal UI ---
+        menuTrigger.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); });
+        document.addEventListener('click', () => dropdown.classList.remove('active'));
+
+        editTrigger.addEventListener('click', () => {
+            const data = JSON.parse(localStorage.getItem('matrix_user_session'));
+            if (data) {
+                editName.value = data.name || "";
+                editDob.value = data.dob || "";
+                editEmail.value = data.email || "";
+                validateEditForm();
+            }
+            editModal.classList.add('active');
         });
 
-        document.addEventListener('click', () => dropdown.classList.remove('active'));
+        cancelEditBtn.addEventListener('click', () => editModal.classList.remove('active'));
 
         function notify(message, type = 'status') {
             notificationText.innerText = message;
             document.getElementById('notif-led').className = `w-2 h-2 rounded-full ${type === 'error' ? 'bg-red-500' : 'bg-indigo-500'} animate-pulse`;
             document.getElementById('notification').classList.add('active');
+            if (type === 'error') {
+                const target = editModal.classList.contains('active') ? document.getElementById('edit-card') : document.body;
+                target.classList.add('error-shake');
+                setTimeout(() => target.classList.remove('error-shake'), 400);
+            }
             setTimeout(() => document.getElementById('notification').classList.remove('active'), 4000);
         }
 
-        const navigateTo = (path) => {
-            const url = new URL(path, window.location.origin + window.location.pathname);
-            window.location.assign(url.href);
-        };
+        const navigateTo = (path) => window.location.assign(new URL(path, window.location.origin + window.location.pathname).href);
 
-        // --- Auth Logic ---
+        // --- Form Interaction ---
+        [editName, editDob, editEmail].forEach(el => el.addEventListener('input', validateEditForm));
+
+        editDob.addEventListener('input', (e) => {
+            let val = e.target.value.replace(/\D/g, '');
+            if (val.length > 2 && val.length <= 4) val = val.slice(0, 2) + '-' + val.slice(2);
+            if (val.length > 4) val = val.slice(0, 2) + '-' + val.slice(2, 4) + '-' + val.slice(4, 8);
+            e.target.value = val;
+        });
+
+        // --- Profile Core Logic ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const cached = localStorage.getItem('matrix_user_session');
                 if (cached) {
-                    try {
-                        const data = JSON.parse(cached);
-                        if (data.uid === user.uid) updateProfileUI(data);
-                    } catch (e) { localStorage.removeItem('matrix_user_session'); }
+                    const data = JSON.parse(cached);
+                    if (data.uid === user.uid) updateProfileUI(data);
                 }
                 await fetchRegistryData(user.uid);
-            } else {
-                navigateTo('../auth/index.html');
-            }
+            } else navigateTo('./auth.html');
         });
 
         async function fetchRegistryData(uid) {
@@ -386,21 +523,17 @@
                     let data = snap.data();
                     updateProfileUI(data);
                     localStorage.setItem('matrix_user_session', JSON.stringify({ uid, ...data }));
-                } else {
-                    navigateTo('../auth/index.html');
-                }
-            } catch (err) {
-                notify("ERR: LOG_SYNC_INTERRUPTED", "error");
-            }
+                } else navigateTo('./auth.html');
+            } catch (err) { notify("ERR: LOG_SYNC_INTERRUPTED", "error"); }
         }
 
         function updateProfileUI(data) {
             displayName.innerText = data.name || "LOGIC_CADET";
             displayDob.innerText = data.dob || "--/--/----";
-            if (data.email) {
-                displayEmail.innerText = data.email;
-                emailTag.classList.remove('hidden');
-            }
+            const roleInfo = ROLE_CONFIG[data.role] || ROLE_CONFIG.other;
+            displayRole.innerText = roleInfo.label;
+            document.getElementById('role-icon').innerHTML = roleInfo.icon;
+
             const scores = data.scores || {};
             displayTotalExp.innerText = Object.values(scores).reduce((a, b) => Number(a) + Number(b), 0);
             renderChips(scores);
@@ -420,56 +553,71 @@
                     <div class="space-y-1 relative z-10"><h3 class="text-[10px] font-black uppercase tracking-tighter text-white">${mod.title}</h3><p class="text-[7px] mono text-zinc-500 uppercase">${mod.concept}</p></div>
                     <div class="flex justify-between items-end border-t border-zinc-800 pt-3 mt-1"><div class="flex flex-col"><span class="text-[7px] mono text-zinc-600 uppercase">Highscore</span><span class="text-[10px] font-black text-indigo-400">${score}</span></div><div class="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center group-hover:bg-indigo-600 transition-colors">${mod.active ? '<svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>' : '<svg class="w-3 h-3 text-zinc-600" fill="currentColor" viewBox="0 0 24 24"><path d="M18 8V7a4 4 0 00-8 0v1H5v11h14V8h-1zm-6-3a2 2 0 012 2v1h-4V7a2 2 0 012-2z"/></svg>'}</div></div>
                 `;
-                chip.addEventListener('click', () => {
-                    if (mod.active) navigateTo(mod.url);
-                    else notify(`NOTICE: ${mod.title} UNDER ENCRYPTION // COMING SOON`);
-                });
+                chip.onclick = () => mod.active ? navigateTo(mod.url) : notify(`NOTICE: ${mod.title} UNDER ENCRYPTION`);
                 moduleGrid.appendChild(chip);
             });
         }
 
-        // --- Protocol Execution ---
-        logoutBtn.addEventListener('click', async () => {
-            try {
-                await signOut(auth);
-                localStorage.removeItem('matrix_user_session');
-                notify("PROTOCOL: TERMINATING_CONNECTION");
-                setTimeout(() => navigateTo('../auth/index.html'), 1000);
-            } catch (err) { notify("ERR: DISCONNECT_FAILED", "error"); }
-        });
-
-        deleteTrigger.addEventListener('click', () => confirmModal.classList.add('active'));
-        cancelDeleteBtn.addEventListener('click', () => confirmModal.classList.remove('active'));
-
-        confirmDeleteBtn.addEventListener('click', async () => {
+        // --- Save Protocol ---
+        saveEditBtn.addEventListener('click', async () => {
             const user = auth.currentUser;
             if (!user) return;
-            confirmDeleteBtn.disabled = true;
-            confirmDeleteBtn.innerText = "PURGING...";
+
+            saveEditBtn.disabled = true;
+            saveEditBtn.innerText = "ENCRYPTING...";
 
             try {
-                // RULE 1: Direct path purge
                 const profileRef = doc(db, 'artifacts', user.uid, 'profile', 'data');
-                await deleteDoc(profileRef);
+                const updatedData = {
+                    name: editName.value.trim(),
+                    dob: editDob.value,
+                    email: editEmail.value.trim() || null
+                };
+
+                await updateDoc(profileRef, updatedData);
                 
-                // Auth Purge
-                await deleteUser(user);
+                // Update local session
+                const session = JSON.parse(localStorage.getItem('matrix_user_session'));
+                localStorage.setItem('matrix_user_session', JSON.stringify({ ...session, ...updatedData }));
                 
-                localStorage.removeItem('matrix_user_session');
-                notify("PROTOCOL: IDENTITY_PURGED // SYSTEM_RESET", "error");
-                setTimeout(() => navigateTo('../auth/index.html'), 1500);
+                updateProfileUI({ ...session, ...updatedData });
+                editModal.classList.remove('active');
+                notify("REGISTRY_UPDATED // SYNC_SUCCESS");
             } catch (err) {
-                console.error(err);
-                if (err.code === 'auth/requires-recent-login') {
-                    notify("ERR: RE-AUTHENTICATION_REQUIRED", "error");
-                    setTimeout(() => navigateTo('../auth/index.html'), 1500);
-                } else {
-                    notify("ERR: PURGE_FAILED", "error");
-                    confirmDeleteBtn.disabled = false;
-                    confirmDeleteBtn.innerText = "Execute Purge";
-                }
+                notify("ERR: COMMIT_FAILED", "error");
+            } finally {
+                saveEditBtn.disabled = false;
+                saveEditBtn.innerText = "Commit Changes";
             }
         });
+
+        // --- Purge & Terminate Protocols ---
+        logoutBtn.onclick = async () => {
+            await signOut(auth);
+            localStorage.removeItem('matrix_user_session');
+            notify("PROTOCOL: TERMINATING_CONNECTION");
+            setTimeout(() => navigateTo('../auth/index.html'), 1000);
+        };
+
+        deleteTrigger.onclick = () => confirmModal.classList.add('active');
+        cancelDeleteBtn.onclick = () => confirmModal.classList.remove('active');
+
+        confirmDeleteBtn.onclick = async () => {
+            const user = auth.currentUser;
+            if (!user) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', user.uid, 'profile', 'data'));
+                await deleteUser(user);
+                localStorage.removeItem('matrix_user_session');
+                notify("PROTOCOL: IDENTITY_PURGED", "error");
+                setTimeout(() => navigateTo('../auth/index.html'), 1500);
+            } catch (err) {
+                if (err.code === 'auth/requires-recent-login') {
+                    notify("ERR: RE-AUTH_REQUIRED", "error");
+                    setTimeout(() => navigateTo('../auth/index.html'), 1500);
+                } else notify("ERR: PURGE_FAILED", "error");
+            }
+        };
     </script>
 </body>
 </html>

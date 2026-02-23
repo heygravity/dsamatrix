@@ -39,11 +39,53 @@
             box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
+        /* --- Global Splash Overlay --- */
+        #global-splash {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 5000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+
+        #global-splash.active { display: flex; }
+
+        .splash-loader {
+            height: 1px;
+            width: 140px;
+            background: rgba(255,255,255,0.1);
+            margin-top: 1.5rem;
+            overflow: hidden;
+        }
+
+        .splash-progress {
+            height: 100%;
+            width: 100%;
+            background: white;
+            transform-origin: left;
+            transform: scaleX(0);
+        }
+
+        .active .splash-progress {
+            animation: load-bar 1.5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+        }
+
+        @keyframes load-bar {
+            0% { transform: scaleX(0); }
+            50% { transform: scaleX(1); }
+            100% { transform: scaleX(0); transform-origin: right; }
+        }
+
         input {
             background: rgba(255, 255, 255, 0.03) !important;
             border: 1px solid var(--border) !important;
             transition: all 0.3s ease;
             -webkit-appearance: none;
+            color: #fff;
         }
 
         input:focus {
@@ -53,9 +95,79 @@
             box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
         }
 
-        input.invalid {
-            border-color: var(--error) !important;
+        /* --- Custom Dropdown Styling --- */
+        .custom-select-container {
+            position: relative;
+            width: 100%;
         }
+
+        .custom-select-trigger {
+            width: 100%;
+            padding: 1rem 1.5rem;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            color: #71717a; /* Muted text */
+        }
+
+        .custom-select-trigger.selected {
+            color: #fff;
+        }
+
+        .custom-select-trigger:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .custom-select-options {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            width: 100%;
+            background: #0d0d0d;
+            border: 1px solid var(--border);
+            border-radius: 1rem;
+            overflow: hidden;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(-10px);
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
+            z-index: 100;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+        }
+
+        .custom-select-container.open .custom-select-options {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+
+        .custom-option {
+            padding: 0.875rem 1.5rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s ease;
+            color: #a1a1aa;
+        }
+
+        .custom-option:hover {
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .custom-option.active {
+            background: rgba(99, 102, 241, 0.1);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        input.invalid { border-color: var(--error) !important; }
 
         .error-msg {
             color: var(--error);
@@ -71,10 +183,7 @@
             pointer-events: none;
         }
 
-        .error-msg.visible {
-            opacity: 1;
-            transform: translateY(0);
-        }
+        .error-msg.visible { opacity: 1; transform: translateY(0); }
 
         .btn-primary {
             background: white;
@@ -134,6 +243,17 @@
 </head>
 <body class="bg-grain px-6">
 
+    <!-- Global Splash Screen -->
+    <div id="global-splash">
+        <div class="text-center">
+            <h2 id="splash-title" class="text-xl font-black tracking-[0.4em] uppercase italic text-white mb-2">Synchronizing</h2>
+            <p id="splash-desc" class="mono text-[8px] text-zinc-500 uppercase tracking-[0.3em]">Checking_Registry_Integrity</p>
+            <div class="splash-loader mx-auto">
+                <div class="splash-progress"></div>
+            </div>
+        </div>
+    </div>
+
     <div id="main-auth-container" class="w-full max-w-md py-12">
         <div class="text-center mb-8 md:mb-10">
             <div class="w-12 h-12 bg-white rounded-xl flex items-center justify-center rotate-3 mx-auto mb-6 shadow-xl shadow-white/5">
@@ -147,116 +267,123 @@
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent"></div>
             
             <div id="auth-view" class="space-y-6">
-                <!-- Mobile Number Input -->
                 <div class="space-y-2">
                     <label class="text-[10px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Mobile Number (India)</label>
                     <div class="relative">
                         <span class="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-500 mono text-sm font-bold">+91</span>
-                        <input type="tel" id="phone-number" inputmode="numeric" pattern="[0-9]*" maxlength="10" class="w-full rounded-2xl pl-16 pr-6 py-5 bg-zinc-900 border border-zinc-800 text-white text-sm mono focus:ring-2 focus:ring-indigo-500/20" placeholder="98765 43210">
+                        <input type="tel" id="phone-number" inputmode="numeric" pattern="[0-9]*" maxlength="10" class="w-full rounded-2xl pl-16 pr-6 py-5 bg-zinc-900 border border-zinc-800 text-white text-sm mono" placeholder="98765 43210">
                     </div>
                 </div>
                 
                 <div id="phone-actions" class="space-y-6">
                     <div id="recaptcha-container"></div>
-                    <button id="send-otp" class="btn-primary w-full py-5 rounded-2xl font-extrabold uppercase text-xs tracking-[0.3em] shadow-2xl shadow-white/5">Verify Identity</button>
+                    <button id="send-otp" class="btn-primary w-full py-5 rounded-2xl font-extrabold uppercase text-xs tracking-[0.3em] shadow-2xl">Verify Identity</button>
                 </div>
 
-                <!-- OTP Input Container -->
                 <div id="otp-container" class="hidden space-y-6">
                     <div class="space-y-2">
                         <label class="text-[10px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Verification Code</label>
                         <input type="tel" id="otp-code" inputmode="numeric" pattern="[0-9]*" maxlength="6" class="w-full rounded-2xl px-6 py-5 bg-zinc-900 border border-zinc-800 text-white text-center text-xl tracking-[0.5em] mono font-bold" placeholder="••••••">
                     </div>
-                    <button id="verify-otp" class="btn-primary w-full py-5 rounded-2xl font-extrabold uppercase text-xs tracking-[0.3em] shadow-2xl shadow-white/5">Authenticate</button>
+                    <button id="verify-otp" class="btn-primary w-full py-5 rounded-2xl font-extrabold uppercase text-xs tracking-[0.3em] shadow-2xl">Authenticate</button>
                     <button id="change-number" class="w-full text-[9px] text-zinc-500 hover:text-white mono uppercase tracking-widest transition-colors">Edit_Entry_Point</button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- User Profile Modal (Sign-Up Details) -->
+    <!-- Onboarding Modal -->
     <div id="profile-modal">
-        <div id="profile-card" class="glass p-8 md:p-10 rounded-[2.5rem] w-full max-w-sm mx-6 space-y-6">
+        <div id="profile-card" class="glass p-8 md:p-10 rounded-[3rem] w-full max-w-md mx-6 space-y-6 overflow-y-auto max-h-[90vh]">
             <div class="text-center">
-                <h2 class="text-xl font-extrabold tracking-tighter uppercase mb-1">Initialize Profile</h2>
+                <h2 class="text-xl font-extrabold tracking-tighter uppercase mb-1 text-white">Initialize Profile</h2>
                 <p class="text-zinc-500 text-[9px] mono uppercase tracking-[0.3em]">Specialist_Onboarding_Protocol</p>
             </div>
             
             <div class="space-y-5">
-                <!-- Name Validation Field -->
                 <div class="space-y-1">
-                    <label class="text-[9px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Full Name (First Last)</label>
-                    <input 
-                        type="text" 
-                        id="user-name" 
-                        maxlength="30" 
-                        autocapitalize="words"
-                        class="w-full rounded-2xl px-6 py-4 bg-zinc-900 border border-zinc-800 text-white text-sm focus:ring-2 focus:ring-indigo-500/20 capitalize" 
-                        placeholder="e.g. John Doe"
-                    >
-                    <p id="error-name" class="error-msg">Require First & Last Name (A-Z only)</p>
+                    <label class="text-[9px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Full Name</label>
+                    <input type="text" id="user-name" maxlength="30" class="w-full rounded-2xl px-6 py-4 bg-zinc-900 border border-zinc-800 text-white text-sm" placeholder="John Doe">
+                    <p id="error-name" class="error-msg">Require First & Last Name</p>
                 </div>
 
-                <!-- DOB Validation Field -->
+                <div class="space-y-1">
+                    <label class="text-[9px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Specialist Role</label>
+                    <div class="custom-select-container" id="role-select-container">
+                        <div class="custom-select-trigger" id="role-trigger">
+                            <span id="role-label">Select Identity Protocol...</span>
+                            <svg class="w-3 h-3 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
+                        </div>
+                        <div class="custom-select-options">
+                            <div class="custom-option" data-value="cs_student">Computer Science Student</div>
+                            <div class="custom-option" data-value="engineering_student">Engineering Student</div>
+                            <div class="custom-option" data-value="software_dev">Software Developer</div>
+                            <div class="custom-option" data-value="competitive_prog">Competitive Programmer</div>
+                            <div class="custom-option" data-value="dsa_educator">DSA Educator</div>
+                            <div class="custom-option" data-value="hobbyist">Hobbyist Specialist</div>
+                            <div class="custom-option" data-value="other">Other_Anomaly</div>
+                        </div>
+                        <input type="hidden" id="user-role" value="">
+                    </div>
+                </div>
+
                 <div class="space-y-1">
                     <label class="text-[9px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Date of Birth (DD-MM-YYYY)</label>
-                    <input type="text" id="user-dob" maxlength="10" inputmode="numeric" class="w-full rounded-2xl px-6 py-4 bg-zinc-900 border border-zinc-800 text-white text-sm mono focus:ring-2 focus:ring-indigo-500/20" placeholder="15-08-1995">
+                    <input type="text" id="user-dob" maxlength="10" inputmode="numeric" class="w-full rounded-2xl px-6 py-4 bg-zinc-900 border border-zinc-800 text-white text-sm mono" placeholder="15-08-1995">
                     <p id="error-dob" class="error-msg">Age must be between 12 and 100</p>
                 </div>
 
-                <!-- Email Validation Field (Optional) -->
                 <div class="space-y-1">
-                    <label class="text-[9px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Secure Channel (Email - Optional)</label>
-                    <input 
-                        type="email" 
-                        id="user-email" 
-                        maxlength="60" 
-                        inputmode="email"
-                        class="w-full rounded-2xl px-6 py-4 bg-zinc-900 border border-zinc-800 text-white text-sm focus:ring-2 focus:ring-indigo-500/20" 
-                        placeholder="protocol@matrix.io"
-                    >
+                    <label class="text-[9px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Email (Optional)</label>
+                    <input type="email" id="user-email" class="w-full rounded-2xl px-6 py-4 bg-zinc-900 border border-zinc-800 text-white text-sm" placeholder="recruit@matrix.io">
                     <p id="error-email" class="error-msg">Invalid transmission format</p>
                 </div>
             </div>
 
-            <button id="save-profile" disabled class="btn-primary w-full py-5 rounded-2xl font-extrabold uppercase text-xs tracking-[0.3em] shadow-2xl shadow-white/5">Sign Up Protocol</button>
+            <button id="save-profile" disabled class="btn-primary w-full py-5 rounded-2xl font-extrabold uppercase text-xs tracking-[0.3em] shadow-2xl">Complete_Registry</button>
         </div>
     </div>
 
     <!-- Notification UI -->
     <div id="notification" class="glass px-6 py-4 rounded-2xl flex items-center gap-4 border-l-4 border-l-indigo-500 min-w-[280px] max-w-[90%] shadow-2xl">
-        <div class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
-        <span id="notification-text" class="text-[10px] font-bold tracking-wider text-zinc-200 uppercase">System Initialized</span>
+        <div id="notif-led" class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+        <span id="notification-text" class="text-[10px] font-bold tracking-wider text-zinc-200 uppercase">System Ready</span>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import { firebaseConfig } from "../script/base.js";
+        import {firebaseConfig} from '../script/base.js';
 
-        // Environment configuration
         //const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // UI Selectors
+        const globalSplash = document.getElementById('global-splash');
+        const splashTitle = document.getElementById('splash-title');
+        const splashDesc = document.getElementById('splash-desc');
+        
         const authCard = document.getElementById('auth-card');
         const phoneInput = document.getElementById('phone-number');
         const otpContainer = document.getElementById('otp-container');
         const otpInput = document.getElementById('otp-code');
         const sendBtn = document.getElementById('send-otp');
         const verifyBtn = document.getElementById('verify-otp');
-        const notification = document.getElementById('notification');
-        const notificationText = document.getElementById('notification-text');
         
         const profileModal = document.getElementById('profile-modal');
-        const profileCard = document.getElementById('profile-card');
         const userNameInput = document.getElementById('user-name');
+        const userRoleHidden = document.getElementById('user-role');
         const userDobInput = document.getElementById('user-dob');
         const userEmailInput = document.getElementById('user-email');
         const saveProfileBtn = document.getElementById('save-profile');
+
+        // Custom Select Elements
+        const roleContainer = document.getElementById('role-select-container');
+        const roleTrigger = document.getElementById('role-trigger');
+        const roleLabel = document.getElementById('role-label');
+        const roleOptions = document.querySelectorAll('.custom-option');
 
         const errors = {
             name: document.getElementById('error-name'),
@@ -267,127 +394,109 @@
         let confirmationResult = null;
 
         /**
-         * Path Resolver
+         * Custom Dropdown Interaction
          */
-        const getProfilePath = (uid) => doc(db, 'artifacts', uid, 'profile', 'data');
+        roleTrigger.addEventListener('click', (e) => {
+            e.stopPropagation();
+            roleContainer.classList.toggle('open');
+        });
+
+        roleOptions.forEach(opt => {
+            opt.addEventListener('click', () => {
+                const val = opt.getAttribute('data-value');
+                const text = opt.innerText;
+                
+                userRoleHidden.value = val;
+                roleLabel.innerText = text;
+                roleTrigger.classList.add('selected');
+                
+                roleOptions.forEach(o => o.classList.remove('active'));
+                opt.classList.add('active');
+                
+                roleContainer.classList.remove('open');
+                checkFormValidity();
+            });
+        });
+
+        window.addEventListener('click', () => roleContainer.classList.remove('open'));
+
+        function showSplash(title, desc) {
+            splashTitle.innerText = title;
+            splashDesc.innerText = desc;
+            globalSplash.classList.add('active');
+        }
+
+        function hideSplash() {
+            globalSplash.classList.remove('active');
+        }
 
         function notify(message, type = 'status') {
-            notificationText.innerText = message;
-            notification.classList.add('active');
-            const activeCard = profileModal.style.display === 'flex' ? profileCard : authCard;
+            document.getElementById('notification-text').innerText = message;
+            document.getElementById('notification').classList.add('active');
+            const activeCard = profileModal.style.display === 'flex' ? document.getElementById('profile-card') : authCard;
             if (type === 'error') {
                 activeCard.classList.add('error-shake');
                 setTimeout(() => activeCard.classList.remove('error-shake'), 400);
             }
-            setTimeout(() => notification.classList.remove('active'), 4000);
+            setTimeout(() => document.getElementById('notification').classList.remove('active'), 4000);
         }
 
-        /**
-         * Validation Logic
-         */
         const validators = {
-            // Strict Name: Only alphabets and a single space allowed
-            name: (val) => /^[A-Za-z]+ [A-Za-z]+$/.test(val.trim()),
-            // Strict Email: Standard format but OPTIONAL (allows empty string)
+            name: (val) => val.trim().split(' ').length >= 2,
+            role: (val) => !!val,
             email: (val) => !val || /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val),
-            // DOB check (12 - 100 years)
             dob: (val) => {
                 if (!/^\d{2}-\d{2}-\d{4}$/.test(val)) return false;
                 const [d, m, y] = val.split('-').map(Number);
-                if (m < 1 || m > 12 || d < 1 || d > 31) return false;
                 const birth = new Date(y, m - 1, d);
-                const now = new Date();
-                if (birth > now || isNaN(birth.getTime())) return false;
-                let age = now.getFullYear() - birth.getFullYear();
-                const mDiff = now.getMonth() - birth.getMonth();
-                if (mDiff < 0 || (mDiff === 0 && now.getDate() < birth.getDate())) age--;
-                return age >= 12 && age <= 100;
+                const age = new Date().getFullYear() - y;
+                return age >= 12 && age <= 100 && !isNaN(birth.getTime());
             }
         };
 
-        function updateUI(field, isValid) {
-            const input = document.getElementById(`user-${field}`);
-            const error = errors[field];
-            // Don't show error for empty optional fields or valid fields
-            if (isValid || !input.value) {
-                input.classList.remove('invalid');
-                error.classList.remove('visible');
-            } else {
-                input.classList.add('invalid');
-                error.classList.add('visible');
-            }
-            checkFormValidity();
-        }
-
         function checkFormValidity() {
             const isNameOk = validators.name(userNameInput.value);
+            const isRoleOk = validators.role(userRoleHidden.value);
             const isDobOk = validators.dob(userDobInput.value);
             const isEmailOk = validators.email(userEmailInput.value);
-            saveProfileBtn.disabled = !(isNameOk && isDobOk && isEmailOk);
+            saveProfileBtn.disabled = !(isNameOk && isRoleOk && isDobOk && isEmailOk);
         }
 
-        /**
-         * Real-time Input Filtering
-         */
-        
-        // Name: Allow only letters and space, prevent multiple spaces
-        userNameInput.addEventListener('input', (e) => {
-            let val = e.target.value;
-            val = val.replace(/[^A-Za-z\s]/g, '');
-            val = val.replace(/^\s+/, '');
-            val = val.replace(/\s{2,}/g, ' ');
-            e.target.value = val;
-            updateUI('name', validators.name(val));
+        [userNameInput, userDobInput, userEmailInput].forEach(el => {
+            el.addEventListener('input', () => {
+                if(el.id === 'user-name') errors.name.classList.toggle('visible', !validators.name(el.value) && el.value.length > 0);
+                if(el.id === 'user-dob') errors.dob.classList.toggle('visible', !validators.dob(el.value) && el.value.length === 10);
+                checkFormValidity();
+            });
         });
 
-        // Email: Filter characters and validate
-        userEmailInput.addEventListener('input', (e) => {
-            let val = e.target.value;
-            val = val.replace(/[^a-zA-Z0-9@._-]/g, '');
-            e.target.value = val;
-            updateUI('email', validators.email(val));
-        });
-
-        // DOB: Numerical filter and auto-hyphen
         userDobInput.addEventListener('input', (e) => {
             let val = e.target.value.replace(/\D/g, '');
             if (val.length > 2 && val.length <= 4) val = val.slice(0, 2) + '-' + val.slice(2);
             if (val.length > 4) val = val.slice(0, 2) + '-' + val.slice(2, 4) + '-' + val.slice(4, 8);
             e.target.value = val;
-            updateUI('dob', validators.dob(val));
         });
 
-        // Auth and Persistence logic
         onAuthStateChanged(auth, async (user) => {
             if (user) {
-                const cached = localStorage.getItem('matrix_user_session');
-                if (cached) {
-                    const data = JSON.parse(cached);
-                    if (data.uid === user.uid && data.name) {
-                        notify(`WELCOME BACK '${data.name.toUpperCase()}'`);
-                        setTimeout(() => window.location.href = '../arena/index.html', 1500);
-                        return;
-                    }
-                }
-                const profileRef = getProfilePath(user.uid);
+                showSplash("AUTHORIZING", "Verifying_Identity_Signature...");
+                
+                const profileRef = doc(db, 'artifacts', user.uid, 'profile', 'data');
                 const profileSnap = await getDoc(profileRef);
+
                 if (profileSnap.exists()) {
                     const data = profileSnap.data();
-                    localStorage.setItem('matrix_user_session', JSON.stringify({ uid: user.uid, name: data.name }));
-                    notify(`WELCOME BACK '${data.name.toUpperCase()}'`);
-                    setTimeout(() => window.location.href = 'index.html', 1500);
+                    localStorage.setItem('matrix_user_session', JSON.stringify({ uid: user.uid, ...data }));
+                    showSplash("WELCOME BACK", `${data.name.toUpperCase()} // ACCESS_GRANTED`);
+                    setTimeout(() => window.location.href = '../arena/index.html', 2000);
                 } else {
+                    hideSplash();
                     profileModal.style.display = 'flex';
                 }
             }
         });
 
         saveProfileBtn.addEventListener('click', async () => {
-            if (!validators.name(userNameInput.value) || !validators.dob(userDobInput.value) || !validators.email(userEmailInput.value)) {
-                notify("ERR: LOGIC_GATES_VIOLATED", "error");
-                return;
-            }
-
             const user = auth.currentUser;
             if (!user) return;
 
@@ -395,45 +504,34 @@
             saveProfileBtn.innerText = "Encrypting...";
 
             try {
-                const profileRef = getProfilePath(user.uid);
                 const profileData = { 
-                    name: userNameInput.value.trim(), 
+                    name: userNameInput.value.trim(),
+                    role: userRoleHidden.value,
                     dob: userDobInput.value, 
                     email: userEmailInput.value.trim() || null, 
                     phone: user.phoneNumber, 
                     joinedAt: new Date().toISOString() 
                 };
-                await setDoc(profileRef, profileData);
-                localStorage.setItem('matrix_user_session', JSON.stringify({ uid: user.uid, name: profileData.name }));
-                notify("DATA SAVE");
-                setTimeout(() => window.location.href = 'index.html', 1500);
+                await setDoc(doc(db, 'artifacts', user.uid, 'profile', 'data'), profileData);
+                localStorage.setItem('matrix_user_session', JSON.stringify({ uid: user.uid, ...profileData }));
+                
+                showSplash("REGISTRY SAVED", "Initializing_Specialist_HUD");
+                setTimeout(() => window.location.href = '../arena/index.html', 1500);
             } catch (err) {
-                console.error("Firestore Error:", err);
                 notify("ERR: REGISTRY_WRITE_FAILED", "error");
                 saveProfileBtn.disabled = false;
-                saveProfileBtn.innerText = "Sign Up Protocol";
             }
         });
-
-        const forceNumeric = (el) => el.addEventListener('input', (e) => { 
-            if(el.id === 'phone-number' || el.id === 'otp-code') e.target.value = e.target.value.replace(/[^0-9]/g, ''); 
-        });
-        forceNumeric(phoneInput);
-        forceNumeric(otpInput);
 
         window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { 'size': 'normal' });
 
         sendBtn.addEventListener('click', async () => {
             const number = phoneInput.value.trim();
-            if (number.length !== 10 || !/^[6-9]/.test(number) || /^(.)\1{9}$/.test(number)) {
-                notify("ERR: INVALID_SEQUENCE", "error");
-                return;
-            }
+            if (number.length !== 10) return notify("ERR: INVALID_SEQUENCE", "error");
             sendBtn.disabled = true;
             try {
                 confirmationResult = await signInWithPhoneNumber(auth, "+91" + number, window.recaptchaVerifier);
                 notify("STATUS: SEQUENCE_SENT");
-                phoneInput.readOnly = true;
                 document.getElementById('phone-actions').classList.add('hidden');
                 otpContainer.classList.remove('hidden');
             } catch (error) {
@@ -445,13 +543,20 @@
         verifyBtn.addEventListener('click', async () => {
             if (otpInput.value.length !== 6) return;
             verifyBtn.disabled = true;
+            showSplash("VERIFYING", "Confirming_Identity_Token...");
             try {
                 await confirmationResult.confirm(otpInput.value);
-                notify("STATUS: IDENTITY_VERIFIED");
             } catch (error) {
+                hideSplash();
                 notify("ERR: INVALID_KEY", "error");
                 verifyBtn.disabled = false;
             }
+        });
+
+        document.getElementById('change-number').addEventListener('click', () => {
+            otpContainer.classList.add('hidden');
+            document.getElementById('phone-actions').classList.remove('hidden');
+            sendBtn.disabled = false;
         });
     </script>
 </body>
