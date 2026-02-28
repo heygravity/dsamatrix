@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Arena Hub | DSA Matrix</title>
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%236366f1'/><circle cx='50' cy='50' r='20' fill='white'/><circle cx='25' cy='25' r='10' fill='white' opacity='0.5'/><circle cx='75' cy='75' r='10' fill='white' opacity='0.5'/></svg>">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%236366f1'/><circle cx='50' cy='50' r='20' fill='white' opacity='0.5'/><circle cx='25' cy='25' r='10' fill='white' opacity='0.5'/><circle cx='75' cy='75' r='10' fill='white' opacity='0.5'/></svg>">
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
@@ -34,6 +34,47 @@
             background: rgba(255, 255, 255, 0.02);
             border: 1px solid var(--border);
             backdrop-filter: blur(20px);
+        }
+
+        /* --- Global Splash Overlay (Parity with Auth) --- */
+        #global-splash {
+            position: fixed;
+            inset: 0;
+            background: var(--bg);
+            z-index: 5000;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.5s ease;
+        }
+
+        #global-splash.active { display: flex; }
+
+        .splash-loader {
+            height: 1px;
+            width: 140px;
+            background: rgba(255,255,255,0.1);
+            margin-top: 1.5rem;
+            overflow: hidden;
+        }
+
+        .splash-progress {
+            height: 100%;
+            width: 100%;
+            background: white;
+            transform-origin: left;
+            transform: scaleX(0);
+        }
+
+        .active .splash-progress {
+            animation: load-bar 1.5s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+        }
+
+        @keyframes load-bar {
+            0% { transform: scaleX(0); }
+            50% { transform: scaleX(1); }
+            100% { transform: scaleX(0); transform-origin: right; }
         }
 
         /* --- Protocol Menu --- */
@@ -80,14 +121,13 @@
             padding: 1.5rem;
         }
 
-        /* Modal Backgrounds */
         #confirmation-modal {
             background: rgba(0, 0, 0, 0.85);
             backdrop-filter: blur(15px);
         }
 
         #edit-modal {
-            background: rgba(0, 0, 0, 0.1); /* 10% Transparency as requested */
+            background: rgba(0, 0, 0, 0.1); 
             backdrop-filter: blur(12px);
         }
 
@@ -95,9 +135,8 @@
             display: flex;
         }
 
-        /* Edit Card Solid Background */
         #edit-card {
-            background: #000000 !important; /* Solid black as requested */
+            background: #000000 !important; 
             border: 1px solid var(--border);
         }
 
@@ -261,13 +300,24 @@
 </head>
 <body class="bg-grain">
 
+    <!-- Global Splash Screen -->
+    <div id="global-splash">
+        <div class="text-center">
+            <h2 id="splash-title" class="text-xl font-black tracking-[0.4em] uppercase italic text-white mb-2">Synchronizing</h2>
+            <p id="splash-desc" class="mono text-[8px] text-zinc-600 uppercase tracking-[0.3em]">Checking_System_Status</p>
+            <div class="splash-loader mx-auto">
+                <div class="splash-progress"></div>
+            </div>
+        </div>
+    </div>
+
     <!-- Header Navigation -->
     <nav class="p-4 md:p-8 flex justify-between items-center max-w-7xl mx-auto relative z-20">
         <div class="flex items-center gap-2 md:gap-3">
             <div class="w-7 h-7 md:w-8 md:h-8 bg-white rounded-lg flex items-center justify-center rotate-3 shadow-lg shadow-white/5">
                 <svg class="w-4 h-4 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
-            <span class="font-extrabold tracking-tighter uppercase text-[10px] md:text-sm">Matrix Arena Hub</span>
+            <span class="font-extrabold tracking-tighter uppercase text-[10px] md:text-sm text-white">Matrix Arena Hub</span>
         </div>
         
         <div class="protocol-menu">
@@ -310,7 +360,7 @@
                     <p id="error-dob" class="error-msg">Age must be between 12 and 100</p>
                 </div>
                 <div class="space-y-1">
-                    <label class="text-[9px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Secure Channel (Email)</label>
+                    <label class="text-[9px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Secure Email</label>
                     <input type="email" id="edit-email" class="w-full rounded-2xl px-6 py-4 bg-zinc-900 border border-zinc-800 text-sm" placeholder="recruit@matrix.io">
                     <p id="error-email" class="error-msg">Invalid transmission format</p>
                 </div>
@@ -411,11 +461,17 @@
         const db = getFirestore(app);
 
         // UI Selectors
+        const globalSplash = document.getElementById('global-splash');
+        const splashTitle = document.getElementById('splash-title');
+        const splashDesc = document.getElementById('splash-desc');
+
         const menuTrigger = document.getElementById('menu-trigger');
         const dropdown = document.getElementById('protocol-dropdown');
         const logoutBtn = document.getElementById('logout-btn');
         const deleteTrigger = document.getElementById('delete-trigger');
         const confirmModal = document.getElementById('confirmation-modal');
+        const confirmDeleteBtn = document.getElementById('confirm-delete'); 
+        const cancelDeleteBtn = document.getElementById('cancel-delete');   
         const editModal = document.getElementById('edit-modal');
         const editTrigger = document.getElementById('edit-trigger');
         
@@ -427,21 +483,28 @@
         const moduleGrid = document.getElementById('module-grid');
         const notificationText = document.getElementById('notification-text');
 
-        // Edit Form Selectors
         const editName = document.getElementById('edit-name');
         const editDob = document.getElementById('edit-dob');
         const editEmail = document.getElementById('edit-email');
         const saveEditBtn = document.getElementById('save-edit');
         const cancelEditBtn = document.getElementById('cancel-edit');
 
+        // --- System Logic Helpers ---
+        function showSplash(title, desc) {
+            splashTitle.innerText = title;
+            splashDesc.innerText = desc;
+            globalSplash.classList.add('active');
+        }
+        function hideSplash() { globalSplash.classList.remove('active'); }
+
         const ROLE_CONFIG = {
-            'cs_student': { label: 'CS_STUDENT', icon: `<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 7l11 5 11-5-11-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>` },
-            'engineering_student': { label: 'ENG_STUDENT', icon: `<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6-3.8 3.8L11 11.5a1 1 0 0 0-1.4 0l-4 4a1 1 0 0 0 1.4 1.4l3.3-3.3 1.5 1.5a1 1 0 0 0 1.4 0l4.5-4.5 1.6 1.6a1 1 0 0 0 1.4-1.4l-3-3a1 1 0 0 0-1.4 0z"/></svg>` },
-            'software_dev': { label: 'SW_ARCHITECT', icon: `<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>` },
-            'competitive_prog': { label: 'LOGIC_COMBATANT', icon: `<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>` },
-            'dsa_educator': { label: 'SYSTEM_INSTRUCTOR', icon: `<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>` },
-            'hobbyist': { label: 'SPECIALIST', icon: `<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>` },
-            'other': { label: 'UNCLASSIFIED', icon: `<svg class="w-3 h-3" fill="currentColor" viewBox="0 0 24 24"><path d="M11 15h2v2h-2zm0-8h2v6h-2zM12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>` }
+            'cs_student': { label: 'CS_STUDENT', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 7l11 5 11-5-11-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>` },
+            'engineering_student': { label: 'ENG_STUDENT', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6-3.8 3.8L11 11.5a1 1 0 0 0-1.4 0l-4 4a1 1 0 0 0 1.4 1.4l3.3-3.3 1.5 1.5a1 1 0 0 0 1.4 0l4.5-4.5 1.6 1.6a1 1 0 0 0 1.4-1.4l-3-3a1 1 0 0 0-1.4 0z"/></svg>` },
+            'software_dev': { label: 'SW_ARCHITECT', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>` },
+            'competitive_prog': { label: 'LOGIC_COMBATANT', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>` },
+            'dsa_educator': { label: 'SYSTEM_INSTRUCTOR', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>` },
+            'hobbyist': { label: 'SPECIALIST', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>` },
+            'other': { label: 'UNCLASSIFIED', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M11 15h2v2h-2zm0-8h2v6h-2zM12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>` }
         };
 
         const MODULE_REGISTRY = [
@@ -458,9 +521,8 @@
             dob: (val) => {
                 if (!/^\d{2}-\d{2}-\d{4}$/.test(val)) return false;
                 const [d, m, y] = val.split('-').map(Number);
-                const birth = new Date(y, m - 1, d);
                 const age = new Date().getFullYear() - y;
-                return age >= 12 && age <= 100 && !isNaN(birth.getTime());
+                return age >= 12 && age <= 100;
             }
         };
 
@@ -468,15 +530,12 @@
             const isNameOk = validators.name(editName.value);
             const isDobOk = validators.dob(editDob.value);
             const isEmailOk = validators.email(editEmail.value);
-
             document.getElementById('error-name').classList.toggle('visible', !isNameOk && editName.value.length > 0);
             document.getElementById('error-dob').classList.toggle('visible', !isDobOk && editDob.value.length === 10);
             document.getElementById('error-email').classList.toggle('visible', !isEmailOk && editEmail.value.length > 0);
-
             saveEditBtn.disabled = !(isNameOk && isDobOk && isEmailOk);
         }
 
-        // --- Menu & Modal UI ---
         menuTrigger.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); });
         document.addEventListener('click', () => dropdown.classList.remove('active'));
 
@@ -495,7 +554,8 @@
 
         function notify(message, type = 'status') {
             notificationText.innerText = message;
-            document.getElementById('notif-led').className = `w-2 h-2 rounded-full ${type === 'error' ? 'bg-red-500' : 'bg-indigo-500'} animate-pulse`;
+            const led = document.getElementById('notif-led');
+            if (led) led.className = `w-2 h-2 rounded-full ${type === 'error' ? 'bg-red-500' : 'bg-indigo-500'} animate-pulse`;
             document.getElementById('notification').classList.add('active');
             if (type === 'error') {
                 const target = editModal.classList.contains('active') ? document.getElementById('edit-card') : document.body;
@@ -507,7 +567,6 @@
 
         const navigateTo = (path) => window.location.assign(new URL(path, window.location.origin + window.location.pathname).href);
 
-        // --- Form Interaction ---
         [editName, editDob, editEmail].forEach(el => el.addEventListener('input', validateEditForm));
 
         editDob.addEventListener('input', (e) => {
@@ -517,7 +576,6 @@
             e.target.value = val;
         });
 
-        // --- Profile Core Logic ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 const cached = localStorage.getItem('matrix_user_session');
@@ -526,19 +584,24 @@
                     if (data.uid === user.uid) updateProfileUI(data);
                 }
                 await fetchRegistryData(user.uid);
-            } else navigateTo('./auth.html');
+            } else navigateTo('../auth/index.html');
         });
 
         async function fetchRegistryData(uid) {
             try {
+                showSplash("SYNCHRONIZING", "Retrieving_Profile_Buffers...");
                 const profileRef = doc(db, 'artifacts', uid, 'profile', 'data');
                 const snap = await getDoc(profileRef);
                 if (snap.exists()) {
                     let data = snap.data();
                     updateProfileUI(data);
                     localStorage.setItem('matrix_user_session', JSON.stringify({ uid, ...data }));
-                } else navigateTo('./auth.html');
-            } catch (err) { notify("ERR: LOG_SYNC_INTERRUPTED", "error"); }
+                } else navigateTo('../auth/index.html');
+                hideSplash();
+            } catch (err) { 
+                notify("ERR: LOG_SYNC_INTERRUPTED", "error"); 
+                hideSplash();
+            }
         }
 
         function updateProfileUI(data) {
@@ -547,7 +610,6 @@
             const roleInfo = ROLE_CONFIG[data.role] || ROLE_CONFIG.other;
             displayRole.innerText = roleInfo.label;
             document.getElementById('role-icon').innerHTML = roleInfo.icon;
-
             const scores = data.scores || {};
             displayTotalExp.innerText = Object.values(scores).reduce((a, b) => Number(a) + Number(b), 0);
             renderChips(scores);
@@ -572,64 +634,57 @@
             });
         }
 
-        // --- Save Protocol ---
         saveEditBtn.addEventListener('click', async () => {
             const user = auth.currentUser;
             if (!user) return;
-
-            saveEditBtn.disabled = true;
-            saveEditBtn.innerText = "ENCRYPTING...";
-
+            showSplash("ENCRYPTING", "Syncing_Registry_Updates...");
             try {
                 const profileRef = doc(db, 'artifacts', user.uid, 'profile', 'data');
-                const updatedData = {
-                    name: editName.value.trim(),
-                    dob: editDob.value,
-                    email: editEmail.value.trim() || null
-                };
-
+                const updatedData = { name: editName.value.trim(), dob: editDob.value, email: editEmail.value.trim() || null };
                 await updateDoc(profileRef, updatedData);
-                
-                // Update local session
                 const session = JSON.parse(localStorage.getItem('matrix_user_session'));
                 localStorage.setItem('matrix_user_session', JSON.stringify({ ...session, ...updatedData }));
-                
                 updateProfileUI({ ...session, ...updatedData });
                 editModal.classList.remove('active');
                 notify("REGISTRY_UPDATED // SYNC_SUCCESS");
-            } catch (err) {
-                notify("ERR: COMMIT_FAILED", "error");
-            } finally {
-                saveEditBtn.disabled = false;
-                saveEditBtn.innerText = "Commit Changes";
-            }
+            } catch (err) { notify("ERR: COMMIT_FAILED", "error"); }
+            finally { hideSplash(); }
         });
 
-        // --- Purge & Terminate Protocols ---
         logoutBtn.onclick = async () => {
+            showSplash("TERMINATING", "Closing_Matrix_Protocol...");
             await signOut(auth);
             localStorage.removeItem('matrix_user_session');
-            notify("PROTOCOL: TERMINATING_CONNECTION");
-            setTimeout(() => navigateTo('../auth/index.html'), 1000);
+            setTimeout(() => navigateTo('./index.html'), 1000);
         };
 
-        deleteTrigger.onclick = () => confirmModal.classList.add('active');
+        deleteTrigger.onclick = () => {
+            dropdown.classList.remove('active');
+            confirmModal.classList.add('active');
+        };
+
         cancelDeleteBtn.onclick = () => confirmModal.classList.remove('active');
 
         confirmDeleteBtn.onclick = async () => {
             const user = auth.currentUser;
             if (!user) return;
+            confirmModal.classList.remove('active');
+            showSplash("PURGING", "Erasing_Identity_Registry...");
             try {
-                await deleteDoc(doc(db, 'artifacts', user.uid, 'profile', 'data'));
-                await deleteUser(user);
+                const profileRef = doc(db, 'artifacts', user.uid, 'profile', 'data');
+                await deleteDoc(profileRef);
+                try {
+                    await deleteUser(user);
+                    notify("PROTOCOL: IDENTITY_PURGED", "error");
+                } catch (authErr) {
+                    await signOut(auth);
+                    notify("DATA_ERASED // RE-AUTH_FAIL_SIGNED_OUT", "error");
+                }
                 localStorage.removeItem('matrix_user_session');
-                notify("PROTOCOL: IDENTITY_PURGED", "error");
                 setTimeout(() => navigateTo('../auth/index.html'), 1500);
             } catch (err) {
-                if (err.code === 'auth/requires-recent-login') {
-                    notify("ERR: RE-AUTH_REQUIRED", "error");
-                    setTimeout(() => navigateTo('../auth/index.html'), 1500);
-                } else notify("ERR: PURGE_FAILED", "error");
+                hideSplash();
+                notify("ERR: DATA_PURGE_INTERRUPTED", "error");
             }
         };
     </script>

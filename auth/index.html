@@ -80,91 +80,20 @@
             100% { transform: scaleX(0); transform-origin: right; }
         }
 
-        input {
+        input, select {
             background: rgba(255, 255, 255, 0.03) !important;
             border: 1px solid var(--border) !important;
             transition: all 0.3s ease;
             -webkit-appearance: none;
+            color-scheme: dark;
             color: #fff;
         }
 
-        input:focus {
+        input:focus, select:focus {
             border-color: var(--accent) !important;
             background: rgba(255, 255, 255, 0.06) !important;
             outline: none;
             box-shadow: 0 0 20px rgba(99, 102, 241, 0.1);
-        }
-
-        /* --- Custom Dropdown Styling --- */
-        .custom-select-container {
-            position: relative;
-            width: 100%;
-        }
-
-        .custom-select-trigger {
-            width: 100%;
-            padding: 1rem 1.5rem;
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border);
-            border-radius: 1rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-size: 0.875rem;
-            color: #71717a; /* Muted text */
-        }
-
-        .custom-select-trigger.selected {
-            color: #fff;
-        }
-
-        .custom-select-trigger:hover {
-            background: rgba(255, 255, 255, 0.06);
-            border-color: rgba(255, 255, 255, 0.2);
-        }
-
-        .custom-select-options {
-            position: absolute;
-            top: calc(100% + 8px);
-            left: 0;
-            width: 100%;
-            background: #0d0d0d;
-            border: 1px solid var(--border);
-            border-radius: 1rem;
-            overflow: hidden;
-            opacity: 0;
-            visibility: hidden;
-            transform: translateY(-10px);
-            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1);
-            z-index: 100;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
-        }
-
-        .custom-select-container.open .custom-select-options {
-            opacity: 1;
-            visibility: visible;
-            transform: translateY(0);
-        }
-
-        .custom-option {
-            padding: 0.875rem 1.5rem;
-            cursor: pointer;
-            font-size: 0.875rem;
-            transition: all 0.2s ease;
-            color: #a1a1aa;
-        }
-
-        .custom-option:hover {
-            background: var(--accent);
-            color: #fff;
-        }
-
-        .custom-option.active {
-            background: rgba(99, 102, 241, 0.1);
-            color: var(--accent);
-            font-weight: 600;
         }
 
         input.invalid { border-color: var(--error) !important; }
@@ -198,25 +127,48 @@
 
         .btn-primary:disabled { opacity: 0.3; cursor: not-allowed; filter: grayscale(1); }
 
-        #notification {
-            position: fixed;
-            bottom: 2rem;
-            left: 50%;
-            transform: translateX(-50%) translateY(120px);
-            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1);
-            z-index: 1000;
+        .btn-social {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
         }
 
+        .btn-social:hover {
+            background: rgba(255,255,255,0.08);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        /* --- Custom Dropdown Styling --- */
+        .custom-select-container { position: relative; width: 100%; }
+        .custom-select-trigger {
+            width: 100%; padding: 1rem 1.5rem; background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border); border-radius: 1rem;
+            display: flex; justify-content: space-between; align-items: center;
+            cursor: pointer; transition: all 0.3s ease; font-size: 0.875rem; color: #71717a; 
+        }
+        .custom-select-trigger.selected { color: #fff; }
+        .custom-select-options {
+            position: absolute; top: calc(100% + 8px); left: 0; width: 100%;
+            background: #0d0d0d; border: 1px solid var(--border); border-radius: 1rem;
+            overflow: hidden; opacity: 0; visibility: hidden; transform: translateY(-10px);
+            transition: all 0.3s cubic-bezier(0.23, 1, 0.32, 1); z-index: 100;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.8);
+        }
+        .custom-select-container.open .custom-select-options { opacity: 1; visibility: visible; transform: translateY(0); }
+        .custom-option { padding: 0.875rem 1.5rem; cursor: pointer; font-size: 0.875rem; transition: all 0.2s ease; color: #a1a1aa; }
+        .custom-option:hover { background: var(--accent); color: #fff; }
+        .custom-option.active { background: rgba(99, 102, 241, 0.1); color: var(--accent); font-weight: 600; }
+
+        #notification {
+            position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%) translateY(120px);
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1); z-index: 1000;
+        }
         #notification.active { transform: translateX(-50%) translateY(0); }
 
         .bg-grain::after {
-            content: "";
-            position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background-image: url("https://grainy-gradients.vercel.app/noise.svg");
-            opacity: 0.02;
-            pointer-events: none;
-            z-index: 100;
+            opacity: 0.02; pointer-events: none; z-index: 100;
         }
 
         @keyframes shake {
@@ -224,20 +176,12 @@
             25% { transform: translateX(-8px); }
             75% { transform: translateX(8px); }
         }
-
         .error-shake { animation: shake 0.3s cubic-bezier(.36,.07,.19,.97) both; }
 
         #profile-modal {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.9);
-            z-index: 200;
-            backdrop-filter: blur(15px);
-            align-items: center;
-            justify-content: center;
-            overflow-y: auto;
-            padding: 2rem 0;
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.95);
+            z-index: 200; backdrop-filter: blur(15px); align-items: center;
+            justify-content: center; overflow-y: auto; padding: 2rem 0;
         }
     </style>
 </head>
@@ -247,7 +191,7 @@
     <div id="global-splash">
         <div class="text-center">
             <h2 id="splash-title" class="text-xl font-black tracking-[0.4em] uppercase italic text-white mb-2">Synchronizing</h2>
-            <p id="splash-desc" class="mono text-[8px] text-zinc-500 uppercase tracking-[0.3em]">Checking_Registry_Integrity</p>
+            <p id="splash-desc" class="mono text-[8px] text-zinc-600 uppercase tracking-[0.3em]">Checking_Registry_Integrity</p>
             <div class="splash-loader mx-auto">
                 <div class="splash-progress"></div>
             </div>
@@ -260,39 +204,63 @@
                 <svg class="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
             <h1 class="text-2xl font-extrabold tracking-tighter uppercase mb-2">Matrix Access</h1>
-            <p class="text-zinc-500 text-[10px] mono uppercase tracking-[0.3em]">Protocol_Authorization_v2</p>
+            <p class="text-zinc-500 text-[10px] mono uppercase tracking-[0.3em]">Protocol_Authorization_v5.1</p>
         </div>
 
         <div id="auth-card" class="glass p-8 md:p-10 rounded-[2.5rem] relative overflow-hidden">
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-indigo-500/50 to-transparent"></div>
             
-            <div id="auth-view" class="space-y-6">
-                <div class="space-y-2">
-                    <label class="text-[10px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Mobile Number (India)</label>
-                    <div class="relative">
-                        <span class="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-500 mono text-sm font-bold">+91</span>
-                        <input type="tel" id="phone-number" inputmode="numeric" pattern="[0-9]*" maxlength="10" class="w-full rounded-2xl pl-16 pr-6 py-5 bg-zinc-900 border border-zinc-800 text-white text-sm mono" placeholder="98765 43210">
+            <div class="space-y-6">
+                <!-- Primary Entry Point -->
+                <div class="space-y-4">
+                    <div class="space-y-2">
+                        <label class="text-[10px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Secure Email</label>
+                        <input type="email" id="auth-email" class="w-full rounded-2xl px-6 py-5 bg-zinc-900 border border-zinc-800 text-white text-sm focus:ring-2 focus:ring-indigo-500/20" placeholder="protocol@matrix.io">
+                        <p id="auth-error-email" class="error-msg">Invalid transmission format</p>
                     </div>
-                </div>
-                
-                <div id="phone-actions" class="space-y-6">
-                    <div id="recaptcha-container"></div>
-                    <button id="send-otp" class="btn-primary w-full py-5 rounded-2xl font-extrabold uppercase text-xs tracking-[0.3em] shadow-2xl">Verify Identity</button>
+                    <div class="space-y-2">
+                        <label class="text-[10px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Access Password</label>
+                        <input type="password" id="auth-password" class="w-full rounded-2xl px-6 py-5 bg-zinc-900 border border-zinc-800 text-white text-sm focus:ring-2 focus:ring-indigo-500/20" placeholder="••••••••">
+                    </div>
                 </div>
 
-                <div id="otp-container" class="hidden space-y-6">
-                    <div class="space-y-2">
-                        <label class="text-[10px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Verification Code</label>
-                        <input type="tel" id="otp-code" inputmode="numeric" pattern="[0-9]*" maxlength="6" class="w-full rounded-2xl px-6 py-5 bg-zinc-900 border border-zinc-800 text-white text-center text-xl tracking-[0.5em] mono font-bold" placeholder="••••••">
-                    </div>
-                    <button id="verify-otp" class="btn-primary w-full py-5 rounded-2xl font-extrabold uppercase text-xs tracking-[0.3em] shadow-2xl">Authenticate</button>
-                    <button id="change-number" class="w-full text-[9px] text-zinc-500 hover:text-white mono uppercase tracking-widest transition-colors">Edit_Entry_Point</button>
+                <button id="main-auth-btn" class="btn-primary w-full py-5 rounded-2xl font-extrabold uppercase text-xs tracking-[0.3em] shadow-2xl">Authorize Entry</button>
+                
+                <div class="flex items-center gap-4 py-2">
+                    <div class="h-[1px] flex-1 bg-white/5"></div>
+                    <span class="text-[8px] mono text-zinc-600 uppercase tracking-widest">Or Protocol Link</span>
+                    <div class="h-[1px] flex-1 bg-white/5"></div>
+                </div>
+
+                <!-- Social Protocol Links -->
+                <div class="grid grid-cols-2 gap-4">
+                    <button class="btn-social py-5 rounded-xl flex items-center justify-center gap-3 group" id="auth-google">
+                        <svg class="w-5 h-5 opacity-60 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l3.66-2.84z"/>
+                            <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 12-4.53z"/>
+                        </svg>
+                        <span class="text-[9px] mono uppercase font-bold tracking-widest text-zinc-400 group-hover:text-white">Google</span>
+                    </button>
+                    <button class="btn-social py-5 rounded-xl flex items-center justify-center gap-3 group" id="auth-github">
+                        <svg class="w-5 h-5 opacity-60 group-hover:opacity-100 transition-opacity" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/>
+                        </svg>
+                        <span class="text-[9px] mono uppercase font-bold tracking-widest text-zinc-400 group-hover:text-white">GitHub</span>
+                    </button>
+                </div>
+
+                <div class="text-center">
+                    <p class="text-[8px] mono text-zinc-600 uppercase tracking-widest leading-relaxed">
+                        Authorized Login Only via Email. <br>New specialists must use social protocol link.
+                    </p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Onboarding Modal -->
+    <!-- Onboarding Modal (Detected New Social Identity) -->
     <div id="profile-modal">
         <div id="profile-card" class="glass p-8 md:p-10 rounded-[3rem] w-full max-w-md mx-6 space-y-6 overflow-y-auto max-h-[90vh]">
             <div class="text-center">
@@ -334,9 +302,12 @@
                 </div>
 
                 <div class="space-y-1">
-                    <label class="text-[9px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Email (Optional)</label>
-                    <input type="email" id="user-email" class="w-full rounded-2xl px-6 py-4 bg-zinc-900 border border-zinc-800 text-white text-sm" placeholder="recruit@matrix.io">
-                    <p id="error-email" class="error-msg">Invalid transmission format</p>
+                    <label class="text-[9px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Mobile Sequence (+91)</label>
+                    <div class="relative">
+                        <span class="absolute left-6 top-1/2 -translate-y-1/2 text-zinc-500 mono text-sm font-bold">+91</span>
+                        <input type="tel" id="user-phone" maxlength="10" inputmode="numeric" class="w-full rounded-2xl pl-16 pr-6 py-4 bg-zinc-900 border border-zinc-800 text-white text-sm mono" placeholder="98765 43210">
+                    </div>
+                    <p id="error-phone" class="error-msg">Require valid 10-digit identifier</p>
                 </div>
             </div>
 
@@ -352,105 +323,81 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { getAuth, RecaptchaVerifier, signInWithPhoneNumber, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { 
+            getAuth, onAuthStateChanged, signInWithEmailAndPassword, 
+            signInWithPopup, GoogleAuthProvider, GithubAuthProvider 
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
         import {firebaseConfig} from '../script/base.js';
 
+        // Environment Setup
         //const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
+        // Active OAuth Providers
+        const providers = {
+            google: new GoogleAuthProvider(),
+            github: new GithubAuthProvider()
+        };
+
+        // UI Target Nodes
         const globalSplash = document.getElementById('global-splash');
         const splashTitle = document.getElementById('splash-title');
         const splashDesc = document.getElementById('splash-desc');
-        
         const authCard = document.getElementById('auth-card');
-        const phoneInput = document.getElementById('phone-number');
-        const otpContainer = document.getElementById('otp-container');
-        const otpInput = document.getElementById('otp-code');
-        const sendBtn = document.getElementById('send-otp');
-        const verifyBtn = document.getElementById('verify-otp');
+        const emailInput = document.getElementById('auth-email');
+        const passwordInput = document.getElementById('auth-password');
+        const mainAuthBtn = document.getElementById('main-auth-btn');
         
         const profileModal = document.getElementById('profile-modal');
         const userNameInput = document.getElementById('user-name');
         const userRoleHidden = document.getElementById('user-role');
         const userDobInput = document.getElementById('user-dob');
-        const userEmailInput = document.getElementById('user-email');
+        const userPhoneInput = document.getElementById('user-phone');
         const saveProfileBtn = document.getElementById('save-profile');
 
-        // Custom Select Elements
         const roleContainer = document.getElementById('role-select-container');
         const roleTrigger = document.getElementById('role-trigger');
         const roleLabel = document.getElementById('role-label');
         const roleOptions = document.querySelectorAll('.custom-option');
 
-        const errors = {
-            name: document.getElementById('error-name'),
-            dob: document.getElementById('error-dob'),
-            email: document.getElementById('error-email')
-        };
-
-        let confirmationResult = null;
-
-        /**
-         * Custom Dropdown Interaction
-         */
-        roleTrigger.addEventListener('click', (e) => {
-            e.stopPropagation();
-            roleContainer.classList.toggle('open');
-        });
-
-        roleOptions.forEach(opt => {
-            opt.addEventListener('click', () => {
-                const val = opt.getAttribute('data-value');
-                const text = opt.innerText;
-                
-                userRoleHidden.value = val;
-                roleLabel.innerText = text;
-                roleTrigger.classList.add('selected');
-                
-                roleOptions.forEach(o => o.classList.remove('active'));
-                opt.classList.add('active');
-                
-                roleContainer.classList.remove('open');
-                checkFormValidity();
-            });
-        });
-
-        window.addEventListener('click', () => roleContainer.classList.remove('open'));
-
+        // --- System Logic Helpers ---
         function showSplash(title, desc) {
             splashTitle.innerText = title;
             splashDesc.innerText = desc;
             globalSplash.classList.add('active');
         }
-
-        function hideSplash() {
-            globalSplash.classList.remove('active');
-        }
-
+        function hideSplash() { globalSplash.classList.remove('active'); }
+        
         function notify(message, type = 'status') {
             document.getElementById('notification-text').innerText = message;
             document.getElementById('notification').classList.add('active');
-            const activeCard = profileModal.style.display === 'flex' ? document.getElementById('profile-card') : authCard;
             if (type === 'error') {
-                activeCard.classList.add('error-shake');
-                setTimeout(() => activeCard.classList.remove('error-shake'), 400);
+                const target = profileModal.style.display === 'flex' ? document.getElementById('profile-card') : authCard;
+                target.classList.add('error-shake');
+                setTimeout(() => target.classList.remove('error-shake'), 400);
             }
-            setTimeout(() => document.getElementById('notification').classList.remove('active'), 4000);
+            setTimeout(() => document.getElementById('notification').classList.remove('active'), 5000);
         }
 
+        const navigateTo = (path) => window.location.assign(new URL(path, window.location.origin + window.location.pathname).href);
+
+        // --- Validation Hub ---
         const validators = {
+            email: (val) => /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val),
             name: (val) => val.trim().split(' ').length >= 2,
             role: (val) => !!val,
-            email: (val) => !val || /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val),
+            phone: (val) => {
+                // Returns boolean for global validity
+                return /^[6-9]\d{9}$/.test(val) && !/^(.)\1{9}$/.test(val);
+            },
             dob: (val) => {
                 if (!/^\d{2}-\d{2}-\d{4}$/.test(val)) return false;
                 const [d, m, y] = val.split('-').map(Number);
-                const birth = new Date(y, m - 1, d);
                 const age = new Date().getFullYear() - y;
-                return age >= 12 && age <= 100 && !isNaN(birth.getTime());
+                return age >= 12 && age <= 100;
             }
         };
 
@@ -458,16 +405,56 @@
             const isNameOk = validators.name(userNameInput.value);
             const isRoleOk = validators.role(userRoleHidden.value);
             const isDobOk = validators.dob(userDobInput.value);
-            const isEmailOk = validators.email(userEmailInput.value);
-            saveProfileBtn.disabled = !(isNameOk && isRoleOk && isDobOk && isEmailOk);
+            const isPhoneOk = validators.phone(userPhoneInput.value);
+            saveProfileBtn.disabled = !(isNameOk && isRoleOk && isDobOk && isPhoneOk);
         }
 
-        [userNameInput, userDobInput, userEmailInput].forEach(el => {
-            el.addEventListener('input', () => {
-                if(el.id === 'user-name') errors.name.classList.toggle('visible', !validators.name(el.value) && el.value.length > 0);
-                if(el.id === 'user-dob') errors.dob.classList.toggle('visible', !validators.dob(el.value) && el.value.length === 10);
-                checkFormValidity();
-            });
+        // --- UI Interactions ---
+        roleTrigger.addEventListener('click', (e) => { e.stopPropagation(); roleContainer.classList.toggle('open'); });
+        roleOptions.forEach(opt => opt.addEventListener('click', () => {
+            userRoleHidden.value = opt.dataset.value;
+            roleLabel.innerText = opt.innerText;
+            roleTrigger.classList.add('selected');
+            roleOptions.forEach(o => o.classList.remove('active'));
+            opt.classList.add('active');
+            roleContainer.classList.remove('open');
+            checkFormValidity();
+        }));
+        window.addEventListener('click', () => roleContainer.classList.remove('open'));
+
+        [userNameInput, userDobInput].forEach(el => el.addEventListener('input', () => {
+            if(el.id === 'user-name') document.getElementById('error-name').classList.toggle('visible', !validators.name(el.value) && el.value.length > 0);
+            if(el.id === 'user-dob') document.getElementById('error-dob').classList.toggle('visible', !validators.dob(el.value) && el.value.length === 10);
+            checkFormValidity();
+        }));
+
+        // Dynamic Mobile Sequence Validation (Parity with Request)
+        userPhoneInput.addEventListener('input', (e) => {
+            const val = e.target.value;
+            const errEl = document.getElementById('error-phone');
+            let msg = "";
+            let isInvalid = false;
+
+            if (val.length > 0) {
+                if (!/^[6-9]/.test(val)) {
+                    msg = "Start with 6, 7, 8, or 9";
+                    isInvalid = true;
+                } else if (val.length < 10) {
+                    msg = `Input 10 digits (${val.length}/10)`;
+                    isInvalid = true;
+                } else if (/^(.)\1{9}$/.test(val)) {
+                    msg = "Repeating anomaly detected";
+                    isInvalid = true;
+                }
+            }
+
+            if (isInvalid) {
+                errEl.innerText = msg;
+                errEl.classList.add('visible');
+            } else {
+                errEl.classList.remove('visible');
+            }
+            checkFormValidity();
         });
 
         userDobInput.addEventListener('input', (e) => {
@@ -477,86 +464,99 @@
             e.target.value = val;
         });
 
-        onAuthStateChanged(auth, async (user) => {
-            if (user) {
-                showSplash("AUTHORIZING", "Verifying_Identity_Signature...");
-                
-                const profileRef = doc(db, 'artifacts', user.uid, 'profile', 'data');
-                const profileSnap = await getDoc(profileRef);
+        emailInput.addEventListener('input', () => {
+            document.getElementById('auth-error-email').classList.toggle('visible', !validators.email(emailInput.value) && emailInput.value.length > 0);
+        });
 
-                if (profileSnap.exists()) {
-                    const data = profileSnap.data();
-                    localStorage.setItem('matrix_user_session', JSON.stringify({ uid: user.uid, ...data }));
-                    showSplash("WELCOME BACK", `${data.name.toUpperCase()} // ACCESS_GRANTED`);
-                    setTimeout(() => window.location.href = '../arena/index.html', 2000);
+        // --- Auth Execution Protocols ---
+        const executeSocialAuth = async (providerName) => {
+            showSplash("AUTHORIZING", "Requesting_Social_Handshake...");
+            try {
+                await signInWithPopup(auth, providers[providerName]);
+            } catch (error) {
+                hideSplash();
+                notify("ERR: SIGNAL_INTERRUPTED", "error");
+            }
+        };
+
+        ['google', 'github'].forEach(p => {
+            const btn = document.getElementById(`auth-${p}`);
+            if (btn) btn.addEventListener('click', () => executeSocialAuth(p));
+        });
+
+        // --- Gateway Submission Logic (Strict Login Only) ---
+        mainAuthBtn.addEventListener('click', async () => {
+            const email = emailInput.value.trim();
+            const password = passwordInput.value;
+
+            if (!validators.email(email) || password.length < 6) {
+                return notify("ERR: INVALID_CREDENTIALS", "error");
+            }
+
+            showSplash("AUTHORIZING", "Verifying_Identity_Signature...");
+            
+            try {
+                // Attempt direct sign-in. If email not in system, Firebase returns user-not-found or invalid-credential.
+                await signInWithEmailAndPassword(auth, email, password);
+            } catch (error) {
+                hideSplash();
+                
+                // Specifically handling "Account doesn't exist" as per user request
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                    notify("Account doesn't exist with the email, use the below provider for login", "error");
+                } else if (error.code === 'auth/wrong-password') {
+                    notify("ERR: INCORRECT_PASSWORD", "error");
                 } else {
-                    hideSplash();
-                    profileModal.style.display = 'flex';
+                    const code = error.code.split('/')[1].toUpperCase().replace(/-/g, '_');
+                    notify(`ERR: ${code}`, "error");
                 }
             }
         });
 
+        // --- Profile Persistence Protocol ---
         saveProfileBtn.addEventListener('click', async () => {
             const user = auth.currentUser;
             if (!user) return;
-
             saveProfileBtn.disabled = true;
-            saveProfileBtn.innerText = "Encrypting...";
-
             try {
                 const profileData = { 
                     name: userNameInput.value.trim(),
                     role: userRoleHidden.value,
                     dob: userDobInput.value, 
-                    email: userEmailInput.value.trim() || null, 
-                    phone: user.phoneNumber, 
+                    phone: "+91" + userPhoneInput.value,
+                    email: user.email || emailInput.value,
                     joinedAt: new Date().toISOString() 
                 };
                 await setDoc(doc(db, 'artifacts', user.uid, 'profile', 'data'), profileData);
                 localStorage.setItem('matrix_user_session', JSON.stringify({ uid: user.uid, ...profileData }));
-                
-                showSplash("REGISTRY SAVED", "Initializing_Specialist_HUD");
-                setTimeout(() => window.location.href = '../arena/index.html', 1500);
+                showSplash("REGISTRY SAVED", "Initializing_Tactical_HUD");
+                setTimeout(() => navigateTo('../arena/index.html'), 1500);
             } catch (err) {
                 notify("ERR: REGISTRY_WRITE_FAILED", "error");
                 saveProfileBtn.disabled = false;
             }
         });
 
-        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { 'size': 'normal' });
+        // --- Master Authorization Observer ---
+        onAuthStateChanged(auth, async (user) => {
+            if (user) {
+                showSplash("SYNCHRONIZING", "Retrieving_Logic_Buffers...");
+                const profileRef = doc(db, 'artifacts', user.uid, 'profile', 'data');
+                const profileSnap = await getDoc(profileRef);
 
-        sendBtn.addEventListener('click', async () => {
-            const number = phoneInput.value.trim();
-            if (number.length !== 10) return notify("ERR: INVALID_SEQUENCE", "error");
-            sendBtn.disabled = true;
-            try {
-                confirmationResult = await signInWithPhoneNumber(auth, "+91" + number, window.recaptchaVerifier);
-                notify("STATUS: SEQUENCE_SENT");
-                document.getElementById('phone-actions').classList.add('hidden');
-                otpContainer.classList.remove('hidden');
-            } catch (error) {
-                notify("ERR: SIGNAL_INTERRUPTED", "error");
-                sendBtn.disabled = false;
-            }
-        });
-
-        verifyBtn.addEventListener('click', async () => {
-            if (otpInput.value.length !== 6) return;
-            verifyBtn.disabled = true;
-            showSplash("VERIFYING", "Confirming_Identity_Token...");
-            try {
-                await confirmationResult.confirm(otpInput.value);
-            } catch (error) {
+                if (profileSnap.exists()) {
+                    const data = profileSnap.data();
+                    if (data.name && data.role && data.dob && data.phone) {
+                        localStorage.setItem('matrix_user_session', JSON.stringify({ uid: user.uid, ...data }));
+                        showSplash("WELCOME BACK", `${data.name.toUpperCase()} // ACCESS_GRANTED`);
+                        setTimeout(() => navigateTo('../arena/index.html'), 2000);
+                        return;
+                    }
+                }
+                
                 hideSplash();
-                notify("ERR: INVALID_KEY", "error");
-                verifyBtn.disabled = false;
+                profileModal.style.display = 'flex';
             }
-        });
-
-        document.getElementById('change-number').addEventListener('click', () => {
-            otpContainer.classList.add('hidden');
-            document.getElementById('phone-actions').classList.remove('hidden');
-            sendBtn.disabled = false;
         });
     </script>
 </body>
