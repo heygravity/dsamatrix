@@ -655,7 +655,7 @@
             showSplash("TERMINATING", "Closing_Matrix_Protocol...");
             await signOut(auth);
             localStorage.removeItem('matrix_user_session');
-            setTimeout(() => navigateTo('./index.html'), 1000);
+            setTimeout(() => navigateTo('../auth/index.html'), 1000);
         };
 
         deleteTrigger.onclick = () => {
