@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chain Persist | DSA Matrix</title>
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%236366f1'/><path d='M30 50 H70 M30 50 Q30 40 40 40 H60 Q70 40 70 50' fill='none' stroke='white' stroke-width='8'/></svg>">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&family=JetBrains+Mono&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #050505;
+            --surface: #111111;
+            --accent: #6366f1;
+            --error: #ef4444;
+            --success: #22c55e;
+            --border: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            background-color: var(--bg);
+            color: #efefef;
+            font-family: 'Inter', sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        .mono { font-family: 'JetBrains Mono', monospace; }
+        .glass { background: rgba(255, 255, 255, 0.02); border: 1px solid var(--border); backdrop-filter: blur(20px); }
+
+        /* --- Mode Transition Splash --- */
+        #mode-splash {
+            position: fixed; inset: 0; background: var(--bg); z-index: 5000;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            opacity: 0; pointer-events: none; transition: opacity 0.4s ease;
+        }
+        #mode-splash.active { opacity: 1; pointer-events: all; }
+        .splash-progress { height: 1px; width: 160px; background: rgba(255,255,255,0.05); margin-top: 1.5rem; overflow: hidden; position: relative; }
+        .splash-progress-bar { position: absolute; top: 0; left: 0; height: 100%; width: 100%; background: white; transform-origin: left; transform: scaleX(0); }
+        #mode-splash.active .splash-progress-bar { animation: progress-load 0.8s cubic-bezier(0.65, 0, 0.35, 1) forwards; }
+        @keyframes progress-load { from { transform: scaleX(0); } to { transform: scaleX(1); } }
+
+        /* --- Toggle Switch --- */
+        .mode-toggle {
+            position: relative; width: 100px; height: 28px; background: #18181b; border-radius: 14px;
+            padding: 3px; cursor: pointer; border: 1px solid var(--border);
+        }
+        .toggle-knob {
+            position: absolute; left: 3px; top: 3px; width: 46px; height: 20px; background: #ffffff;
+            border-radius: 10px; transition: transform 0.4s cubic-bezier(0.23, 1, 0.32, 1);
+        }
+        .mode-toggle.theory .toggle-knob { transform: translateX(48px); }
+
+        /* --- Game Area --- */
+        #game-container { 
+            width: 100%; 
+            height: 100%; 
+            overflow-x: auto; 
+            overflow-y: hidden;
+            display: flex;
+            align-items: center;
+            -webkit-overflow-scrolling: touch;
+        }
+        
+        #game-svg { min-width: 100%; height: 100%; }
+        .node-rect { transition: all 0.3s ease; }
+        .node-text { pointer-events: none; user-select: none; font-family: 'JetBrains Mono', monospace; font-weight: 800; }
+        
+        @keyframes pulse-opacity {
+            0%, 100% { stroke-opacity: 0.1; }
+            50% { stroke-opacity: 0.4; }
+        }
+        .pointer-line { stroke: white; stroke-width: 2; animation: pulse-opacity 2s ease-in-out infinite; }
+
+        /* --- Injection Point Visuals --- */
+        @keyframes pulse-node {
+            0%, 100% { transform: scale(0.9); opacity: 0.6; }
+            50% { transform: scale(1.1); opacity: 1; }
+        }
+        .injection-group { cursor: pointer; transition: filter 0.3s ease; }
+        .injection-group:hover { filter: drop-shadow(0 0 10px var(--accent)); }
+        
+        .anchor-pulse { 
+            animation: pulse-node 1.5s infinite ease-in-out; 
+            transform-origin: center; 
+            transform-box: fill-box;
+        }
+
+        /* --- Theory Animations --- */
+        @keyframes float-new-node {
+            0%, 100% { transform: translateY(0); opacity: 0; }
+            20% { transform: translateY(0); opacity: 1; }
+            80% { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes draw-handshake {
+            0%, 40% { stroke-dashoffset: 50; opacity: 0; }
+            60%, 100% { stroke-dashoffset: 0; opacity: 1; }
+        }
+        @keyframes break-old-link {
+            0%, 70% { opacity: 1; }
+            80%, 100% { opacity: 0; }
+        }
+        @keyframes create-new-link {
+            0%, 80% { stroke-dashoffset: 50; opacity: 0; }
+            95%, 100% { stroke-dashoffset: 0; opacity: 1; }
+        }
+        @keyframes highlight-scan {
+            0%, 100% { border-color: var(--border); box-shadow: none; }
+            25% { border-color: var(--accent); box-shadow: 0 0 15px var(--accent); }
+        }
+        @keyframes incoming-float {
+            0% { transform: translateY(-50px); opacity: 0; }
+            40% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        @keyframes head-shift-float {
+            0% { transform: translateX(0); opacity: 1; }
+            40% { transform: translateX(60px); opacity: 1; }
+            100% { transform: translateX(60px); opacity: 1; }
+        }
+
+        .animate-scan { animation: highlight-scan 4s infinite; }
+        .animate-scan-delay { animation: highlight-scan 4s infinite 1.5s; }
+        .animate-incoming { animation: incoming-float 4s infinite cubic-bezier(0.23, 1, 0.32, 1); }
+        .animate-head-shift { animation: head-shift-float 4s infinite cubic-bezier(0.23, 1, 0.32, 1); }
+
+        .theory-handshake-line { stroke-dasharray: 50; stroke-dashoffset: 50; animation: draw-handshake 6s infinite ease-in-out; }
+        .theory-old-line { animation: break-old-link 6s infinite ease-in-out; }
+        .theory-new-entry-line { stroke-dasharray: 50; stroke-dashoffset: 50; animation: create-new-link 6s infinite ease-in-out; }
+        .theory-node-animate { animation: float-new-node 6s infinite ease-in-out; }
+
+        /* --- View Management --- */
+        .view-pane { position: absolute; inset: 0; transition: opacity 0.4s ease; }
+        .hidden-pane { opacity: 0 !important; visibility: hidden !important; pointer-events: none !important; }
+
+        /* --- Overlays --- */
+        #game-over-overlay, #start-overlay {
+            position: fixed; inset: 0; background: rgba(0, 0, 0, 0.92); backdrop-filter: blur(20px);
+            z-index: 1050; 
+            display: none; align-items: center; justify-content: center; padding: 6rem 1.5rem 2rem;
+            overflow-y: auto;
+        }
+        #game-over-overlay.visible, #start-overlay.visible { display: flex; }
+
+        .overlay-card {
+            background: #09090b;
+            border-top: 4px solid var(--accent);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.8);
+            position: relative;
+            width: 100%;
+            max-width: 24rem;
+        }
+
+        .bg-grain::after { content: ""; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-image: url("https://grainy-gradients.vercel.app/noise.svg"); opacity: 0.02; pointer-events: none; z-index: 100; }
+
+        #notification { 
+            position: fixed; 
+            bottom: 1.5rem; 
+            left: 50%; 
+            transform: translateX(-50%) translateY(120px); 
+            transition: transform 0.5s cubic-bezier(0.23, 1, 0.32, 1); 
+            z-index: 2000; 
+            width: calc(100% - 2rem); 
+            max-width: 280px; 
+            padding: 0.75rem 1rem;
+        }
+        #notification.active { transform: translateX(-50%) translateY(0); }
+
+        .reveal-theory { opacity: 0; transform: translateY(15px); transition: all 0.8s cubic-bezier(0.23, 1, 0.32, 1); }
+        .reveal-theory.active { opacity: 1; transform: translateY(0); }
+
+        /* Scrollbar Styling */
+        #game-container::-webkit-scrollbar { height: 4px; }
+        #game-container::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); }
+        #game-container::-webkit-scrollbar-thumb { background: rgba(99, 102, 241, 0.2); border-radius: 2px; }
+    </style>
+</head>
+<body class="bg-grain">
+
+    <!-- Mode Splash -->
+    <div id="mode-splash">
+        <div class="text-center">
+            <h1 class="text-2xl font-black tracking-tighter text-white uppercase italic mb-2">CHAIN PERSIST</h1>
+            <p id="splash-status" class="mono text-[10px] text-zinc-500 uppercase tracking-[0.4em]">LOADING_BUFFERS...</p>
+            <div class="splash-progress"><div class="splash-progress-bar"></div></div>
+        </div>
+    </div>
+
+    <!-- HUD Header -->
+    <header id="main-header" class="fixed top-0 w-full z-[1100] p-4 md:p-8 bg-black/95 backdrop-blur-2xl border-b border-white/5 shadow-xl">
+        <div class="max-w-7xl mx-auto flex flex-col gap-4">
+            <!-- Top Line: Back, Title, Timer -->
+            <div class="flex justify-between items-center w-full">
+                <div class="flex items-center gap-3">
+                    <button id="back-btn" class="w-8 h-8 glass rounded-lg flex items-center justify-center hover:bg-white/5 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M15 19l-7-7 7-7"/></svg>
+                    </button>
+                    <div>
+                        <h1 class="font-extrabold tracking-tighter uppercase text-[10px] md:text-xs text-white leading-none">Chain_Persist</h1>
+                        <p id="level-display" class="mono text-[8px] md:text-[9px] text-zinc-500 uppercase mt-1">Lvl_01</p>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-4 md:gap-6">
+                    <div class="text-right">
+                        <p class="text-[8px] mono text-zinc-500 uppercase leading-none mb-1">Score</p>
+                        <p id="score-display" class="font-black text-sm md:text-xl text-white leading-none">0000</p>
+                    </div>
+                    <div class="relative w-10 h-10 md:w-12 md:h-12 glass rounded-full flex items-center justify-center">
+                        <svg viewBox="0 0 36 36" class="w-full h-full p-1 rotate-[-90deg]">
+                            <circle cx="18" cy="18" r="16" fill="none" stroke="#ffffff1a" stroke-width="2" />
+                            <circle id="timer-ring" cx="18" cy="18" r="16" fill="none" stroke="#6366f1" stroke-width="2" stroke-dasharray="100 100" />
+                        </svg>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Line: Toggle -->
+            <div class="flex justify-center items-center gap-4 border-t border-white/5 pt-3">
+                <span class="text-[8px] mono uppercase tracking-widest text-zinc-500">Combat</span>
+                <div class="mode-toggle" id="view-toggle"><div class="toggle-knob"></div></div>
+                <span class="text-[8px] mono uppercase tracking-widest text-zinc-500">Theory</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="relative flex-1 w-full h-screen">
+        
+        <!-- Combat View -->
+        <section id="combat-pane" class="view-pane flex items-center justify-center pt-32 pb-4">
+            <div id="start-overlay" class="visible">
+                <div class="overlay-card glass p-8 md:p-12 rounded-[3rem] text-center space-y-8">
+                    <div class="space-y-2">
+                        <h2 class="text-4xl font-black tracking-tighter uppercase italic text-white leading-none">Inject</h2>
+                        <p class="text-zinc-500 mono text-[9px] uppercase tracking-[0.3em]">Chain_Link_Protocol_v.07</p>
+                    </div>
+                    <div class="space-y-4">
+                        <p class="text-xs text-zinc-400 leading-relaxed font-light">
+                            Securing pointers in a drifting chain. Speed and precision determine your final Rank.
+                        </p>
+                        <div class="bg-indigo-500/10 border border-indigo-500/30 p-5 rounded-2xl text-left">
+                            <p class="text-[9px] mono text-indigo-400 font-bold uppercase mb-2 tracking-widest">Tactical Directive:</p>
+                            <p class="text-[11px] text-zinc-300 leading-relaxed">
+                                Identify where the <span class="text-white font-bold italic">Incoming Node</span> belongs and click the <span class="text-white font-bold underline">pulsing "+" anchor</span>.
+                            </p>
+                        </div>
+                    </div>
+                    <button id="begin-btn" class="w-full py-5 bg-white text-black rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-zinc-200 transition-all active:scale-95 shadow-xl shadow-white/5">
+                        Initiate Combat
+                    </button>
+                </div>
+            </div>
+
+            <div class="w-full h-full relative overflow-hidden flex flex-col">
+                <div id="game-container" class="flex-1 w-full cursor-grab active:cursor-grabbing">
+                    <svg id="game-svg"></svg>
+                </div>
+                
+                <!-- Mission Bar -->
+                <div class="absolute bottom-[6.5rem] md:bottom-[7rem] w-full px-4 z-[800]">
+                    <div class="max-w-md mx-auto glass rounded-2xl p-4 flex items-center justify-between gap-4 border-l-4 border-l-indigo-500 shadow-2xl">
+                        <div class="space-y-1">
+                            <span class="text-[8px] mono text-indigo-400 font-bold uppercase tracking-widest">[INCOMING_NODE]</span>
+                            <p id="instruction-text" class="text-xs text-white font-medium italic">Inject Value: <span id="target-value" class="bg-indigo-500/20 px-2 py-0.5 rounded text-indigo-400 font-black not-italic">--</span></p>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[8px] mono text-zinc-500 uppercase">Integrity</span>
+                            <p id="integrity-text" class="text-xs font-bold text-emerald-500">100%</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Theory View -->
+        <section id="theory-pane" class="view-pane hidden-pane overflow-y-auto px-6 pt-48 pb-24">
+            <div class="max-w-4xl mx-auto space-y-24">
+                
+                <!-- Introduction: Definitions -->
+                <div class="space-y-8 reveal-theory">
+                    <div class="inline-flex items-center gap-3 px-3 py-1 bg-indigo-500/10 border border-indigo-500/30 rounded-full">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                        <span class="text-[10px] mono text-indigo-400 font-bold uppercase tracking-widest">Logic_Foundation</span>
+                    </div>
+                    <h2 class="text-4xl md:text-6xl font-black tracking-tighter uppercase italic text-white leading-tight">The Linked Chain</h2>
+                    <div class="space-y-10">
+                        <p class="text-zinc-400 text-base md:text-lg font-light leading-relaxed">
+                            A <strong>Linked List</strong> is a sequential collection of data elements called <strong>Nodes</strong>. Unlike arrays, nodes are not side-by-side; they "handshake" via pointers.
+                        </p>
+                        <div class="grid md:grid-cols-2 gap-8">
+                            <div class="glass p-6 rounded-2xl border-white/5 border-l-4 border-l-indigo-500">
+                                <h4 class="text-white font-black uppercase text-sm mb-2 italic">The Node</h4>
+                                <p class="text-zinc-500 text-xs leading-relaxed">Contains <strong>Data</strong> (the value) and a <strong>Next Pointer</strong> (address of the successor).</p>
+                            </div>
+                            <div class="glass p-6 rounded-2xl border-white/5 border-l-4 border-l-indigo-500">
+                                <h4 class="text-white font-black uppercase text-sm mb-2 italic">The Head</h4>
+                                <p class="text-zinc-500 text-xs leading-relaxed">The leader node at the start. If the <strong>Head</strong> is lost, the chain is unreachable.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Animated Core Protocol -->
+                <div class="grid lg:grid-cols-2 gap-16 items-start reveal-theory">
+                    <div class="space-y-10">
+                        <h3 class="text-2xl font-bold uppercase tracking-tight text-white border-l-4 border-indigo-500 pl-4 italic">Insertion Protocol</h3>
+                        <div class="space-y-8">
+                            <div class="flex gap-4">
+                                <div class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-black text-xs shrink-0">01</div>
+                                <p class="text-sm text-zinc-300 leading-relaxed">Scan from the <strong>Head</strong> to find the numerical gap.</p>
+                            </div>
+                            <div class="flex gap-4">
+                                <div class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-black text-xs shrink-0">02</div>
+                                <p class="text-sm text-zinc-300 leading-relaxed">New Node grabs the hand of the successor (Handshake).</p>
+                            </div>
+                            <div class="flex gap-4">
+                                <div class="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center text-indigo-400 font-black text-xs shrink-0">03</div>
+                                <p class="text-sm text-zinc-300 leading-relaxed">Predecessor updates pointer to the New Node (Final Link).</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="glass p-8 md:p-12 rounded-[3rem] flex flex-col items-center border-white/5 shadow-2xl relative overflow-hidden">
+                        <svg viewBox="0 0 200 120" class="w-full relative z-10">
+                            <defs>
+                                <marker id="arrow-green-main" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto">
+                                    <path d="M 0 0 L 10 5 L 0 10 z" fill="#22c55e" />
+                                </marker>
+                                <marker id="arrow-white-main" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto">
+                                    <path d="M 0 0 L 10 5 L 0 10 z" fill="white" fill-opacity="0.2" />
+                                </marker>
+                            </defs>
+                            <rect x="20" y="50" width="34" height="24" rx="6" fill="#18181b" stroke="#6366f1" stroke-width="2" />
+                            <text x="37" y="66" text-anchor="middle" fill="white" font-size="9" font-weight="900" class="mono">HEAD</text>
+                            <path d="M54 62 L146 62" stroke="white" stroke-opacity="0.2" stroke-width="1.5" stroke-dasharray="3" class="theory-old-line" marker-end="url(#arrow-white-main)"/>
+                            <rect x="146" y="50" width="34" height="24" rx="6" fill="#18181b" stroke="#6366f1" stroke-width="2" />
+                            <text x="163" y="66" text-anchor="middle" fill="white" font-size="9" font-weight="900" class="mono">NODE</text>
+                            <g class="theory-node-animate">
+                                <rect x="83" y="15" width="34" height="24" rx="8" fill="#6366f1" stroke="white" stroke-width="2" />
+                                <text x="100" y="31" text-anchor="middle" fill="white" font-size="8" font-weight="900" class="mono italic">NEW</text>
+                                <path d="M117 27 Q 140 27, 160 50" fill="none" stroke="#22c55e" stroke-width="2" class="theory-handshake-line" marker-end="url(#arrow-green-main)"/>
+                                <path d="M40 50 Q 60 27, 83 27" fill="none" stroke="#22c55e" stroke-width="2" class="theory-new-entry-line" marker-end="url(#arrow-green-main)"/>
+                            </g>
+                        </svg>
+                    </div>
+                </div>
+
+                <!-- Condition Check Traces (FIXED: Added missing animated diagrams) -->
+                <div class="space-y-12 reveal-theory">
+                    <div class="inline-flex items-center gap-3 px-3 py-1 bg-indigo-500/10 border border-indigo-500/30 rounded-full">
+                        <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                        <span class="text-[10px] mono text-indigo-400 font-bold uppercase tracking-widest">Tactical_Trace</span>
+                    </div>
+                    
+                    <div class="grid lg:grid-cols-2 gap-12 items-start">
+                        <!-- Example 01: Middle Insertion -->
+                        <div class="glass p-8 md:p-10 rounded-[3rem] border-white/5 space-y-8 bg-zinc-950/20">
+                            <h4 class="text-xl font-black text-white uppercase italic">01. Middle Insertion</h4>
+                            <div class="space-y-4">
+                                <div class="p-4 rounded-xl bg-white/5 border border-white/5 animate-scan">
+                                    <p class="text-[10px] mono text-indigo-400 font-bold uppercase mb-1">Check: Is 25 > 10?</p>
+                                    <p class="text-[11px] text-zinc-400 font-medium">[YES] -> Move to next Node.</p>
+                                </div>
+                                <div class="p-4 rounded-xl bg-indigo-500/10 border border-indigo-500/20">
+                                    <p class="text-[10px] mono text-emerald-400 font-bold uppercase mb-1">Check: Is 25 < 30?</p>
+                                    <p class="text-[11px] text-zinc-400 font-medium">[YES] -> Target gap found.</p>
+                                </div>
+                            </div>
+                            <svg viewBox="0 0 200 130" class="w-full mt-6">
+                                <defs>
+                                    <marker id="arrow-green-trace-1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto">
+                                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#22c55e" />
+                                    </marker>
+                                </defs>
+                                <g transform="translate(10,85)">
+                                    <rect width="34" height="24" rx="6" fill="#18181b" stroke="#6366f1" stroke-width="2" class="animate-scan" />
+                                    <text x="17" y="15" text-anchor="middle" fill="white" font-size="9" font-weight="900" class="mono">10</text>
+                                </g>
+                                <g transform="translate(150,85)">
+                                    <rect width="34" height="24" rx="6" fill="#18181b" stroke="#6366f1" stroke-width="2" />
+                                    <text x="17" y="15" text-anchor="middle" fill="white" font-size="9" font-weight="900" class="mono">30</text>
+                                </g>
+                                <g class="theory-node-animate">
+                                    <rect x="83" y="25" width="34" height="24" rx="8" fill="#6366f1" stroke="white" stroke-width="1.5" />
+                                    <text x="100" y="40" text-anchor="middle" fill="white" font-size="9" font-weight="900" class="mono">25</text>
+                                    <path d="M117 37 Q 140 37, 150 85" fill="none" stroke="#22c55e" stroke-width="1.5" class="theory-handshake-line" marker-end="url(#arrow-green-trace-1)" />
+                                    <path d="M44 85 Q 60 37, 83 37" fill="none" stroke="#22c55e" stroke-width="1.5" class="theory-new-entry-line" marker-end="url(#arrow-green-trace-1)" />
+                                </g>
+                            </svg>
+                        </div>
+
+                        <!-- Example 02: Pre-Head Insertion -->
+                        <div class="glass p-8 md:p-10 rounded-[3rem] border-white/5 space-y-8 bg-gradient-to-br from-emerald-500/5 to-transparent">
+                            <h4 class="text-xl font-black text-white uppercase italic">02. Pre-Head Insertion</h4>
+                            <div class="space-y-4">
+                                <div class="p-4 rounded-xl bg-white/5 border border-white/5 animate-scan">
+                                    <p class="text-[10px] mono text-indigo-400 font-bold uppercase mb-1">Check: Is 05 < Head (10)?</p>
+                                    <p class="text-[11px] text-zinc-400 font-medium">[YES] -> Reset Head leader.</p>
+                                </div>
+                                <div class="p-4 rounded-xl bg-emerald-500/10 border border-emerald-500/20">
+                                    <p class="text-[10px] mono text-emerald-400 font-bold uppercase mb-1">Action: Replace Leader</p>
+                                    <p class="text-[11px] text-zinc-400 font-medium">Link 05 to 10. 05 becomes the start.</p>
+                                </div>
+                            </div>
+                            <svg viewBox="0 0 240 130" class="w-full mt-6">
+                                <defs>
+                                    <marker id="arrow-green-trace-2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto">
+                                        <path d="M 0 0 L 10 5 L 0 10 z" fill="#22c55e" />
+                                    </marker>
+                                </defs>
+                                <g class="animate-head-shift">
+                                    <g transform="translate(40,85)">
+                                        <rect width="34" height="24" rx="6" fill="#18181b" stroke="#6366f1" stroke-width="2" />
+                                        <text x="17" y="15" text-anchor="middle" fill="white" font-size="9" font-weight="900" class="mono">10</text>
+                                        <text x="17" y="34" text-anchor="middle" fill="#6366f1" font-size="5" font-weight="black" class="mono uppercase opacity-40">Head</text>
+                                    </g>
+                                    <line x1="74" y1="97" x2="110" y2="97" stroke="#3f3f46" stroke-width="1" stroke-dasharray="2" />
+                                    <g transform="translate(110,85)">
+                                        <rect width="34" height="24" rx="6" fill="#18181b" stroke="#3f3f46" stroke-width="2" />
+                                        <text x="17" y="15" text-anchor="middle" fill="white" font-size="9" font-weight="900" class="mono">20</text>
+                                    </g>
+                                </g>
+
+                                <g class="animate-incoming" transform="translate(40,0)">
+                                    <g transform="translate(0,85)">
+                                        <rect width="34" height="24" rx="8" fill="#22c55e" stroke="white" stroke-width="2" />
+                                        <text x="17" y="15" text-anchor="middle" fill="white" font-size="9" font-weight="900" class="mono">05</text>
+                                        <text x="17" y="34" text-anchor="middle" fill="#22c55e" font-size="6" font-weight="black" class="mono uppercase animate-pulse">NEW HEAD</text>
+                                    </g>
+                                    <line x1="34" y1="97" x2="60" y2="97" stroke="#22c55e" stroke-width="2" stroke-dasharray="50" stroke-dashoffset="50" class="theory-handshake-line" marker-end="url(#arrow-green-trace-2)" />
+                                </g>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Practical section -->
+                <div class="space-y-12 reveal-theory">
+                    <div class="inline-flex items-center gap-3 px-3 py-1 bg-emerald-500/10 border border-emerald-500/30 rounded-full">
+                        <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <span class="text-[10px] mono text-emerald-400 font-bold uppercase tracking-widest">Logic_In_Action</span>
+                    </div>
+                    <h3 class="text-3xl font-black uppercase tracking-tighter text-white italic">Practical Scenarios</h3>
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="glass p-8 rounded-[2.5rem] border-white/5 flex flex-col gap-6">
+                            <h4 class="text-lg font-bold text-white uppercase tracking-tight italic">01. Scavenger Hunt</h4>
+                            <p class="text-xs text-zinc-400 leading-relaxed">The <span class="text-white font-bold italic">First Note</span> is your <span class="text-indigo-400">Head</span>. Each location is a <span class="text-indigo-400">Node</span>. Directions act as <span class="text-indigo-400">Pointers</span>.</p>
+                        </div>
+                        <div class="glass p-8 rounded-[2.5rem] border-white/5 flex flex-col gap-6">
+                            <h4 class="text-lg font-bold text-white uppercase tracking-tight italic">02. Train Coupler</h4>
+                            <p class="text-xs text-zinc-400 leading-relaxed">Unhook and re-hook coaches. This illustrates the efficiency of <span class="text-emerald-400">Constant Time Complexity</span> insertion.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Final Card -->
+                <div class="glass p-10 md:p-16 rounded-[4rem] reveal-theory border-white/5 bg-gradient-to-br from-indigo-500/5 to-transparent text-center">
+                    <div class="max-w-2xl mx-auto space-y-6">
+                        <h3 class="text-2xl font-black uppercase tracking-tighter text-white italic">Combat Summary</h3>
+                        <p class="text-zinc-400 text-base leading-relaxed font-light">
+                            Arrays are like theater seats; adding someone forces a shift. A <strong>Linked List</strong> is like a social circle; you just open your arms and let someone in. It’s the ultimate structure for high-speed data manipulation.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Simulation End Overlay -->
+    <div id="game-over-overlay">
+        <div class="overlay-card glass p-8 md:p-10 rounded-[3rem] text-center space-y-8 shadow-2xl">
+            <div class="space-y-2">
+                <h2 class="text-3xl md:text-4xl font-black tracking-tighter uppercase italic text-white leading-none">Chain Severed</h2>
+                <p class="text-zinc-500 mono text-[8px] md:text-[9px] uppercase tracking-[0.3em]">Performance_Analysis_Log</p>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3 md:gap-4">
+                <div class="bg-white/5 rounded-2xl p-3 md:p-4 border border-white/5 text-center"><p class="text-[7px] mono text-zinc-500 uppercase mb-1">Final Score</p><p id="result-score" class="text-xl md:text-2xl font-black text-white">0000</p></div>
+                <div class="bg-white/5 rounded-2xl p-3 md:p-4 border border-white/5 text-center"><p class="text-[7px] mono text-zinc-500 uppercase mb-1">Combat Rank</p><p id="result-rank" class="text-[9px] md:text-xs font-black text-indigo-400 uppercase">Recruit</p></div>
+                <div class="bg-white/5 rounded-2xl p-3 md:p-4 border border-white/5 text-center"><p class="text-[7px] mono text-zinc-500 uppercase mb-1">Highscore</p><p id="result-best" class="text-xl md:text-2xl font-black text-zinc-400">0000</p></div>
+                <div class="bg-white/5 rounded-2xl p-3 md:p-4 border border-white/5 text-center"><p class="text-[7px] mono text-zinc-500 uppercase mb-1">Integrity</p><p id="result-accuracy" class="text-xl md:text-2xl font-black text-emerald-500">0%</p></div>
+            </div>
+
+            <button id="restart-btn" class="w-full py-5 bg-white text-black rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-zinc-200 active:scale-95 transition-all shadow-xl">
+                Restart Protocol
+            </button>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notification" class="glass rounded-2xl flex items-center gap-4 border-l-4 border-l-indigo-500 shadow-2xl">
+        <div id="notif-led" class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
+        <span id="notification-text" class="text-[9px] font-bold tracking-wider text-zinc-200 uppercase">System Ready</span>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getFirestore, doc, getDoc, updateDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import {firebaseConfig} from '../../script/base.js';
+
+        //const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        let level = 1, score = 0, timeLeft = 100, timerInterval = null, list = [], targetValue = null;
+        let currentUser = null, correctMoves = 0, totalMoves = 0, totalSpeedScore = 0, isGameOver = false, isSimulationRunning = false;
+
+        const modeSplash = document.getElementById('mode-splash'), splashStatus = document.getElementById('splash-status');
+        const viewToggle = document.getElementById('view-toggle'), combatPane = document.getElementById('combat-pane'), theoryPane = document.getElementById('theory-pane');
+        const levelDisplay = document.getElementById('level-display'), scoreDisplay = document.getElementById('score-display');
+        const timerRing = document.getElementById('timer-ring'), targetValEl = document.getElementById('target-value');
+        const startOverlay = document.getElementById('start-overlay'), gameOverOverlay = document.getElementById('game-over-overlay');
+        const gameSvg = document.getElementById('game-svg'), gameContainer = document.getElementById('game-container'), integrityText = document.getElementById('integrity-text');
+        const notification = document.getElementById('notification'), notificationText = document.getElementById('notification-text');
+
+        function triggerSplash(status, cb) {
+            splashStatus.innerText = status;
+            modeSplash.classList.add('active');
+            setTimeout(() => { cb(); setTimeout(() => modeSplash.classList.remove('active'), 800); }, 500);
+        }
+
+        function generateLevel() {
+            const count = 2 + Math.min(Math.floor(level / 2), 6);
+            const values = [];
+            while(values.length < count + 1) {
+                let r = Math.floor(Math.random() * 90) + 10;
+                if(!values.includes(r)) values.push(r);
+            }
+            targetValue = values.pop();
+            list = values.sort((a, b) => a - b);
+            targetValEl.innerText = targetValue;
+            renderList();
+            startTimer();
+        }
+
+        function renderList() {
+            gameSvg.innerHTML = '';
+            const isMobile = window.innerWidth < 768;
+            const nodeW = isMobile ? 50 : 64, nodeH = isMobile ? 36 : 44, nodeGap = isMobile ? 40 : 60;
+            const totalW = (list.length * nodeW) + ((list.length - 1) * nodeGap) + (nodeGap * 2.5);
+            gameSvg.setAttribute('width', Math.max(window.innerWidth, totalW));
+            gameSvg.setAttribute('height', gameContainer.clientHeight);
+            const drawAreaWidth = (list.length * nodeW) + ((list.length - 1) * nodeGap);
+            const startX = (parseFloat(gameSvg.getAttribute('width')) - drawAreaWidth) / 2;
+            const startY = gameContainer.clientHeight / 2 - nodeH / 2;
+
+            list.forEach((val, i) => {
+                const x = startX + (i * (nodeW + nodeGap)), y = startY;
+                const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+                rect.setAttribute("x", x); rect.setAttribute("y", y); rect.setAttribute("width", nodeW); rect.setAttribute("height", nodeH);
+                rect.setAttribute("rx", "8"); rect.setAttribute("class", "node-rect fill-[#18181b] stroke-zinc-800"); rect.setAttribute("stroke-width", "2");
+                gameSvg.appendChild(rect);
+                const text = document.createElementNS("http://www.w3.org/2000/svg", "text");
+                text.setAttribute("x", x + nodeW/2); text.setAttribute("y", y + nodeH/2 + 5);
+                text.setAttribute("text-anchor", "middle"); text.setAttribute("class", "node-text fill-white");
+                text.setAttribute("font-size", isMobile ? "12" : "14"); text.textContent = val;
+                gameSvg.appendChild(text);
+                if(i < list.length - 1) {
+                    const line = document.createElementNS("http://www.w3.org/2000/svg", "line");
+                    line.setAttribute("x1", x + nodeW); line.setAttribute("y1", y + nodeH/2);
+                    line.setAttribute("x2", x + nodeW + nodeGap); line.setAttribute("y2", y + nodeH/2);
+                    line.setAttribute("class", "pointer-line"); gameSvg.appendChild(line);
+                }
+            });
+
+            drawAnchor(startX - nodeGap/2, startY + nodeH/2, -1);
+            for(let i = 0; i < list.length - 1; i++) drawAnchor(startX + (i * (nodeW + nodeGap)) + nodeW + nodeGap/2, startY + nodeH/2, i);
+            drawAnchor(startX + (list.length - 1) * (nodeW + nodeGap) + nodeW + nodeGap/2, startY + nodeH/2, list.length - 1);
+            if(totalW > window.innerWidth) gameContainer.scrollLeft = (totalW - window.innerWidth) / 2;
+        }
+
+        function drawAnchor(cx, cy, index) {
+            const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+            g.setAttribute("class", "injection-group"); g.onclick = () => handleInject(index);
+            const pulse = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            pulse.setAttribute("cx", cx); pulse.setAttribute("cy", cy); pulse.setAttribute("r", 18);
+            pulse.setAttribute("class", "fill-indigo-500/20 anchor-pulse");
+            pulse.style.transformBox = "fill-box"; pulse.style.transformOrigin = "center";
+            g.appendChild(pulse);
+            const bg = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            bg.setAttribute("cx", cx); bg.setAttribute("cy", cy); bg.setAttribute("r", 12);
+            bg.setAttribute("fill", "#6366f1");
+            g.appendChild(bg);
+            const hLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            hLine.setAttribute("x1", cx - 5); hLine.setAttribute("y1", cy); hLine.setAttribute("x2", cx + 5); hLine.setAttribute("y2", cy);
+            hLine.setAttribute("stroke", "white"); hLine.setAttribute("stroke-width", "2.5");
+            g.appendChild(hLine);
+            const vLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+            vLine.setAttribute("x1", cx); vLine.setAttribute("y1", cy - 5); vLine.setAttribute("x2", cx); vLine.setAttribute("y2", cy + 5);
+            vLine.setAttribute("stroke", "white"); vLine.setAttribute("stroke-width", "2.5");
+            g.appendChild(vLine);
+            gameSvg.appendChild(g);
+        }
+
+        function handleInject(index) {
+            if(isGameOver) return;
+            totalMoves++;
+            let isCorrect = (index === -1) ? (targetValue < list[0]) : (index === list.length - 1) ? (targetValue > list[list.length - 1]) : (targetValue > list[index] && targetValue < list[index + 1]);
+
+            if(isCorrect) {
+                correctMoves++; totalSpeedScore += timeLeft; score += Math.floor(timeLeft * level); level++;
+                updateUI(); notify("PROTOCOL: LINK_SECURED", "success"); generateLevel();
+            } else {
+                timeLeft = Math.max(0, timeLeft - 25); notify("ERR: POINTER_CORRUPTION", "error"); updateUI();
+            }
+        }
+
+        function calculateAccuracy() {
+            if (totalMoves === 0) return 100;
+            return Math.round(((correctMoves / totalMoves) * 0.3 + (totalSpeedScore / Math.max(1, correctMoves) / 100) * 0.7) * 100);
+        }
+
+        function updateUI() {
+            const s = score.toString().padStart(4, '0');
+            scoreDisplay.innerText = s;
+            levelDisplay.innerText = `Lvl_${level.toString().padStart(2, '0')}`;
+            const acc = calculateAccuracy();
+            integrityText.innerText = `${acc}%`;
+            integrityText.className = `text-xs font-bold ${acc > 80 ? 'text-emerald-500' : acc > 50 ? 'text-yellow-500' : 'text-red-500'}`;
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval); timeLeft = 100; isSimulationRunning = true;
+            timerInterval = setInterval(() => {
+                timeLeft -= (0.4 + (level * 0.1));
+                if(timerRing) timerRing.style.strokeDasharray = `${Math.max(0, timeLeft)} 100`;
+                if(timeLeft <= 0) endGame();
+            }, 100);
+        }
+
+        async function endGame() {
+            if(isGameOver) return;
+            isGameOver = true; isSimulationRunning = false; clearInterval(timerInterval); notify("CRITICAL: CHAIN_SEVERED", "error");
+            const acc = calculateAccuracy(), rank = score > 15000 ? "Matrix_Overlord" : score > 5000 ? "System_Specialist" : "Logic_Cadet";
+            document.getElementById('result-score').innerText = score.toString().padStart(4, '0');
+            document.getElementById('result-accuracy').innerText = `${acc}%`; document.getElementById('result-rank').innerText = rank;
+            let highscore = 0;
+            if(currentUser) {
+                const ref = doc(db, 'artifacts', currentUser.uid, 'profile', 'data'), snap = await getDoc(ref);
+                if(snap.exists()) {
+                    highscore = snap.data().scores?.list || 0;
+                    if(score > highscore) {
+                        highscore = score;
+                        await updateDoc(ref, { "scores.list": highscore });
+                        const session = JSON.parse(localStorage.getItem('matrix_user_session') || '{}');
+                        session.scores = { ...(session.scores || {}), list: highscore };
+                        localStorage.setItem('matrix_user_session', JSON.stringify(session));
+                    }
+                }
+            }
+            document.getElementById('result-best').innerText = highscore.toString().padStart(4, '0'); 
+            if (!viewToggle.classList.contains('theory')) {
+                gameOverOverlay.classList.add('visible');
+            }
+        }
+
+        function notify(msg, type) {
+            notificationText.innerText = msg;
+            const led = document.getElementById('notif-led');
+            if(led) led.className = `w-2 h-2 rounded-full animate-pulse ${type === 'error' ? 'bg-red-500' : 'bg-emerald-500'}`;
+            notification.classList.add('active'); 
+            if (window.notifTimeout) clearTimeout(window.notifTimeout);
+            window.notifTimeout = setTimeout(() => notification.classList.remove('active'), 2500);
+        }
+
+        viewToggle.onclick = () => {
+            const isTheory = viewToggle.classList.toggle('theory');
+            triggerSplash(isTheory ? "LOADING_THEORY..." : "LOADING_COMBAT...", () => {
+                combatPane.classList.toggle('hidden-pane', isTheory);
+                theoryPane.classList.toggle('hidden-pane', !isTheory);
+                
+                if(isTheory) {
+                    clearInterval(timerInterval);
+                    gameOverOverlay.classList.remove('visible');
+                    startOverlay.classList.remove('visible');
+                    document.querySelectorAll('.reveal-theory').forEach(el => el.classList.add('active'));
+                } else {
+                    if(isGameOver) gameOverOverlay.classList.add('visible');
+                    else if(!isSimulationRunning) startOverlay.classList.add('visible');
+                    else startTimer();
+                }
+            });
+        };
+
+        const resetGame = () => {
+            level = 1; score = 0; correctMoves = 0; totalMoves = 0; totalSpeedScore = 0; isGameOver = false; isSimulationRunning = false;
+            updateUI(); gameOverOverlay.classList.remove('visible'); startOverlay.classList.remove('visible'); generateLevel();
+        };
+
+        document.getElementById('begin-btn').onclick = resetGame;
+        document.getElementById('restart-btn').onclick = resetGame;
+        document.getElementById('back-btn').onclick = () => window.location.href = '../index.html';
+
+        onAuthStateChanged(auth, u => { 
+            if(u) { 
+                currentUser = u; 
+                triggerSplash("INITIALIZING...", () => {
+                    if (!viewToggle.classList.contains('theory')) startOverlay.classList.add('visible');
+                    setTimeout(() => notification.classList.remove('active'), 2500);
+                });
+            } else window.location.href = '../../auth/index.html'; 
+        });
+        window.onresize = renderList;
+    </script>
+</body>
+</html>

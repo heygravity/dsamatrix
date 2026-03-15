@@ -36,7 +36,7 @@
             backdrop-filter: blur(20px);
         }
 
-        /* --- Global Splash Overlay (Parity with Auth) --- */
+        /* --- Global Splash Overlay --- */
         #global-splash {
             position: fixed;
             inset: 0;
@@ -300,7 +300,7 @@
 </head>
 <body class="bg-grain">
 
-    <!-- Global Splash Screen -->
+    <!-- Global Splash Overlay -->
     <div id="global-splash">
         <div class="text-center">
             <h2 id="splash-title" class="text-xl font-black tracking-[0.4em] uppercase italic text-white mb-2">Synchronizing</h2>
@@ -354,6 +354,14 @@
                     <input type="text" id="edit-name" class="w-full rounded-2xl px-6 py-4 bg-zinc-900 border border-zinc-800 text-sm" placeholder="John Doe">
                     <p id="error-name" class="error-msg">Require First & Last Name</p>
                 </div>
+
+                <!-- Adaptive Organization Field -->
+                <div id="edit-org-container" class="space-y-1 hidden">
+                    <label id="edit-org-label" class="text-[9px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Organization Name</label>
+                    <input type="text" id="edit-org" maxlength="50" class="w-full rounded-2xl px-6 py-4 bg-zinc-900 border border-zinc-800 text-sm" placeholder="Organization identifier...">
+                    <p id="error-org" class="error-msg">Input required (Alphabets only)</p>
+                </div>
+
                 <div class="space-y-1">
                     <label class="text-[9px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Date of Birth (DD-MM-YYYY)</label>
                     <input type="text" id="edit-dob" maxlength="10" class="w-full rounded-2xl px-6 py-4 bg-zinc-900 border border-zinc-800 text-sm mono" placeholder="15-08-1995">
@@ -423,6 +431,9 @@
                         <div id="role-icon"></div>
                         ROLE: <span id="display-role" class="text-indigo-400 font-bold">---</span>
                     </div>
+                    <div id="display-org-pill" class="hidden glass px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-[8px] md:text-[9px] mono text-zinc-400 uppercase border-white/5 whitespace-nowrap">
+                        ORG: <span id="display-org" class="text-white">---</span>
+                    </div>
                     <div class="glass px-4 md:px-5 py-2 md:py-2.5 rounded-xl text-[8px] md:text-[9px] mono text-zinc-400 uppercase border-white/5 whitespace-nowrap">
                         DOB: <span id="display-dob" class="text-white">--/--/----</span>
                     </div>
@@ -478,6 +489,8 @@
         const displayName = document.getElementById('display-name');
         const displayDob = document.getElementById('display-dob');
         const displayRole = document.getElementById('display-role');
+        const displayOrg = document.getElementById('display-org');
+        const displayOrgPill = document.getElementById('display-org-pill');
         const displayTotalExp = document.getElementById('display-total-exp');
         const profileSection = document.getElementById('profile-display');
         const moduleGrid = document.getElementById('module-grid');
@@ -486,6 +499,9 @@
         const editName = document.getElementById('edit-name');
         const editDob = document.getElementById('edit-dob');
         const editEmail = document.getElementById('edit-email');
+        const editOrg = document.getElementById('edit-org');
+        const editOrgContainer = document.getElementById('edit-org-container');
+        const editOrgLabel = document.getElementById('edit-org-label');
         const saveEditBtn = document.getElementById('save-edit');
         const cancelEditBtn = document.getElementById('cancel-edit');
 
@@ -498,26 +514,29 @@
         function hideSplash() { globalSplash.classList.remove('active'); }
 
         const ROLE_CONFIG = {
-            'cs_student': { label: 'CS_STUDENT', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 7l11 5 11-5-11-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>` },
-            'engineering_student': { label: 'ENG_STUDENT', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6-3.8 3.8L11 11.5a1 1 0 0 0-1.4 0l-4 4a1 1 0 0 0 1.4 1.4l3.3-3.3 1.5 1.5a1 1 0 0 0 1.4 0l4.5-4.5 1.6 1.6a1 1 0 0 0 1.4-1.4l-3-3a1 1 0 0 0-1.4 0z"/></svg>` },
-            'software_dev': { label: 'SW_ARCHITECT', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>` },
-            'competitive_prog': { label: 'LOGIC_COMBATANT', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>` },
-            'dsa_educator': { label: 'SYSTEM_INSTRUCTOR', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>` },
-            'hobbyist': { label: 'SPECIALIST', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>` },
-            'other': { label: 'UNCLASSIFIED', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M11 15h2v2h-2zm0-8h2v6h-2zM12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>` }
+            'cs_student': { label: 'CS_STUDENT', group: 'student', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2L1 7l11 5 11-5-11-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>` },
+            'engineering_student': { label: 'ENG_STUDENT', group: 'student', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6-3.8 3.8L11 11.5a1 1 0 0 0-1.4 0l-4 4a1 1 0 0 0 1.4 1.4l3.3-3.3 1.5 1.5a1 1 0 0 0 1.4 0l4.5-4.5 1.6 1.6a1 1 0 0 0 1.4-1.4l-3-3a1 1 0 0 0-1.4 0z"/></svg>` },
+            'software_dev': { label: 'SW_ARCHITECT', group: 'pro', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M9.4 16.6L4.8 12l4.6-4.6L8 6l-6 6 6 6 1.4-1.4zm5.2 0l4.6-4.6-4.6-4.6L16 6l6 6-6 6-1.4-1.4z"/></svg>` },
+            'competitive_prog': { label: 'LOGIC_COMBATANT', group: 'other', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>` },
+            'dsa_educator': { label: 'SYSTEM_INSTRUCTOR', group: 'other', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>` },
+            'hobbyist': { label: 'SPECIALIST', group: 'other', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 14.5v-9l6 4.5-6 4.5z"/></svg>` },
+            'other': { label: 'UNCLASSIFIED', group: 'other', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M11 15h2v2h-2zm0-8h2v6h-2zM12 2C6.47 2 2 6.47 2 12s4.47 10 10 10 10-4.47 10-10S17.53 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"/></svg>` },
+            'employee': { label: 'PRO_EMPLOYEE', group: 'pro', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>` },
+            'startup_owner': { label: 'FOUNDER', group: 'pro', icon: `<svg class="w-3 h-3 text-indigo-400" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>` }
         };
 
         const MODULE_REGISTRY = [
             { id: 'bst', title: 'BST_Stabilizer', concept: 'Hierarchical Trees', active: true, url: 'bst_stabilizer/index.html', graphic: `<svg viewBox="0 0 100 60" class="w-full h-12"><path d="M50 10 L30 35 M50 10 L70 35" stroke="currentColor" stroke-width="1.5" /><circle cx="50" cy="10" r="5" fill="currentColor"/><circle cx="30" cy="35" r="5" fill="currentColor" opacity="0.4"/><circle cx="70" cy="35" r="5" fill="#6366f1"/></svg>` },
-            { id: 'list', title: 'Chain_Persist', concept: 'Linked Lists', active: false, graphic: `<svg viewBox="0 0 100 60" class="w-full h-10"><rect x="10" y="25" width="15" height="10" rx="1" fill="currentColor"/><rect x="42.5" y="25" width="15" height="10" rx="1" fill="currentColor"/><rect x="75" y="25" width="15" height="10" rx="1" fill="currentColor"/><path d="M25 30 L42.5 30 M57.5 30 L75 30" stroke="currentColor" stroke-width="2" stroke-dasharray="2"/></svg>` },
+            { id: 'list', title: 'Chain_Persist', concept: 'Linked Lists', active: true, url: 'chain_persist/index.html', graphic: `<svg viewBox="0 0 100 60" class="w-full h-10"><rect x="10" y="25" width="15" height="10" rx="1" fill="currentColor"/><rect x="42.5" y="25" width="15" height="10" rx="1" fill="currentColor"/><rect x="75" y="25" width="15" height="10" rx="1" fill="currentColor"/><path d="M25 30 L42.5 30 M57.5 30 L75 30" stroke="currentColor" stroke-width="2" stroke-dasharray="2"/></svg>` },
             { id: 'graph', title: 'Path_Navigator', concept: 'Graph Networks', active: false, graphic: `<svg viewBox="0 0 100 60" class="w-full h-10"><circle cx="20" cy="15" r="4" fill="currentColor"/><circle cx="80" cy="15" r="4" fill="currentColor"/><circle cx="50" cy="45" r="4" fill="currentColor"/><path d="M24 15 L76 15 M23 18 L47 43 M77 18 L53 43" stroke="currentColor" stroke-width="1" opacity="0.3"/></svg>` },
             { id: 'stack', title: 'Stack_Overflow', concept: 'LIFO Buffers', active: false, graphic: `<svg viewBox="0 0 100 60" class="w-full h-10"><rect x="35" y="10" width="30" height="6" fill="#6366f1"/><rect x="35" y="20" width="30" height="6" fill="currentColor" opacity="0.6"/><rect x="35" y="30" width="30" height="6" fill="currentColor" opacity="0.3"/><path d="M30 5 V 45 H 70 V 5" fill="none" stroke="currentColor" stroke-width="2"/></svg>` }
         ];
 
-        // --- Validation Logic ---
+        // --- Validation Hub ---
         const validators = {
             name: (val) => val.trim().split(' ').length >= 2,
             email: (val) => !val || /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val),
+            org: (val) => val.trim().length >= 2,
             dob: (val) => {
                 if (!/^\d{2}-\d{2}-\d{4}$/.test(val)) return false;
                 const [d, m, y] = val.split('-').map(Number);
@@ -530,12 +549,17 @@
             const isNameOk = validators.name(editName.value);
             const isDobOk = validators.dob(editDob.value);
             const isEmailOk = validators.email(editEmail.value);
+            const isOrgOk = editOrgContainer.classList.contains('hidden') || validators.org(editOrg.value);
+
             document.getElementById('error-name').classList.toggle('visible', !isNameOk && editName.value.length > 0);
             document.getElementById('error-dob').classList.toggle('visible', !isDobOk && editDob.value.length === 10);
             document.getElementById('error-email').classList.toggle('visible', !isEmailOk && editEmail.value.length > 0);
-            saveEditBtn.disabled = !(isNameOk && isDobOk && isEmailOk);
+            document.getElementById('error-org').classList.toggle('visible', !isOrgOk && editOrg.value.length > 0);
+
+            saveEditBtn.disabled = !(isNameOk && isDobOk && isEmailOk && isOrgOk);
         }
 
+        // --- UI Logic ---
         menuTrigger.addEventListener('click', (e) => { e.stopPropagation(); dropdown.classList.toggle('active'); });
         document.addEventListener('click', () => dropdown.classList.remove('active'));
 
@@ -545,6 +569,19 @@
                 editName.value = data.name || "";
                 editDob.value = data.dob || "";
                 editEmail.value = data.email || "";
+                editOrg.value = data.organization || "";
+                
+                const roleInfo = ROLE_CONFIG[data.role] || ROLE_CONFIG.other;
+                if (roleInfo.group === 'student') {
+                    editOrgContainer.classList.remove('hidden');
+                    editOrgLabel.innerText = "College Name";
+                } else if (roleInfo.group === 'pro') {
+                    editOrgContainer.classList.remove('hidden');
+                    editOrgLabel.innerText = "Company Name";
+                } else {
+                    editOrgContainer.classList.add('hidden');
+                }
+                
                 validateEditForm();
             }
             editModal.classList.add('active');
@@ -562,18 +599,24 @@
                 target.classList.add('error-shake');
                 setTimeout(() => target.classList.remove('error-shake'), 400);
             }
-            setTimeout(() => document.getElementById('notification').classList.remove('active'), 4000);
+            setTimeout(() => document.getElementById('notification').classList.remove('active'), 5000);
         }
 
         const navigateTo = (path) => window.location.assign(new URL(path, window.location.origin + window.location.pathname).href);
 
         [editName, editDob, editEmail].forEach(el => el.addEventListener('input', validateEditForm));
 
+        editOrg.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+            validateEditForm();
+        });
+
         editDob.addEventListener('input', (e) => {
             let val = e.target.value.replace(/\D/g, '');
             if (val.length > 2 && val.length <= 4) val = val.slice(0, 2) + '-' + val.slice(2);
             if (val.length > 4) val = val.slice(0, 2) + '-' + val.slice(2, 4) + '-' + val.slice(4, 8);
             e.target.value = val;
+            validateEditForm();
         });
 
         onAuthStateChanged(auth, async (user) => {
@@ -607,9 +650,18 @@
         function updateProfileUI(data) {
             displayName.innerText = data.name || "LOGIC_CADET";
             displayDob.innerText = data.dob || "--/--/----";
+            
             const roleInfo = ROLE_CONFIG[data.role] || ROLE_CONFIG.other;
             displayRole.innerText = roleInfo.label;
             document.getElementById('role-icon').innerHTML = roleInfo.icon;
+
+            if (data.organization) {
+                displayOrgPill.classList.remove('hidden');
+                displayOrg.innerText = data.organization.toUpperCase();
+            } else {
+                displayOrgPill.classList.add('hidden');
+            }
+
             const scores = data.scores || {};
             displayTotalExp.innerText = Object.values(scores).reduce((a, b) => Number(a) + Number(b), 0);
             renderChips(scores);
@@ -640,7 +692,12 @@
             showSplash("ENCRYPTING", "Syncing_Registry_Updates...");
             try {
                 const profileRef = doc(db, 'artifacts', user.uid, 'profile', 'data');
-                const updatedData = { name: editName.value.trim(), dob: editDob.value, email: editEmail.value.trim() || null };
+                const updatedData = { 
+                    name: editName.value.trim(), 
+                    dob: editDob.value, 
+                    email: editEmail.value.trim() || null,
+                    organization: editOrgContainer.classList.contains('hidden') ? null : editOrg.value.trim()
+                };
                 await updateDoc(profileRef, updatedData);
                 const session = JSON.parse(localStorage.getItem('matrix_user_session'));
                 localStorage.setItem('matrix_user_session', JSON.stringify({ ...session, ...updatedData }));
@@ -658,11 +715,7 @@
             setTimeout(() => navigateTo('../auth/index.html'), 1000);
         };
 
-        deleteTrigger.onclick = () => {
-            dropdown.classList.remove('active');
-            confirmModal.classList.add('active');
-        };
-
+        deleteTrigger.onclick = () => { dropdown.classList.remove('active'); confirmModal.classList.add('active'); };
         cancelDeleteBtn.onclick = () => confirmModal.classList.remove('active');
 
         confirmDeleteBtn.onclick = async () => {
