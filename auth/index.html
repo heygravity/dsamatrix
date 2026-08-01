@@ -377,7 +377,7 @@
 
         const navigateTo = (path) => {
             let base = window.location.href;
-            if (window.location.pathname.endsWith('/auth/index.html') && path.startsWith('./')) {
+            if (window.location.pathname.endsWith('index.html') && path.startsWith('./')) {
                 path = '.' + path; // Adjust relative path if running inside a subdirectory like /auth/index.html
             }
             window.location.assign(new URL(path, base).href);
@@ -604,7 +604,7 @@
                         if (existingData.name && existingData.role && existingData.dob && existingData.phone) {
                             localStorage.setItem('matrix_user_session', JSON.stringify({ uid: targetUid || user.uid, ...existingData }));
                             showSplash("ACCESS GRANTED", `${existingData.name.toUpperCase()} // REGISTRY_VERIFIED`);
-                            setTimeout(() => navigateTo('./arena.html'), 1200);
+                            setTimeout(() => navigateTo('../arena/index.html'), 1200);
                             return;
                         }
                     }
@@ -632,7 +632,7 @@
                             localStorage.setItem('matrix_user_session', JSON.stringify({ uid: targetUid || user.uid, ...profileData }));
                             
                             showSplash("ACCESS GRANTED", `${name.toUpperCase()} // REGISTRY_CREATED`);
-                            setTimeout(() => navigateTo('./arena.html'), 1200);
+                            setTimeout(() => navigateTo('../arena/index.html'), 1200);
                             return;
                         }
                     }
@@ -693,7 +693,7 @@
                         localStorage.setItem('matrix_user_session', JSON.stringify({ uid: userUid, ...profileData }));
 
                         showSplash("ACCESS GRANTED", `${name.toUpperCase()} // REGISTRY_VERIFIED`);
-                        setTimeout(() => navigateTo('./arena.html'), 1200);
+                        setTimeout(() => navigateTo('../arena/index.html'), 1200);
                         return;
                     } catch (err) {
                         hideSplash();
@@ -730,7 +730,7 @@
                 await setDoc(doc(db, 'artifacts', user.uid, 'profile', 'data'), profileData);
                 localStorage.setItem('matrix_user_session', JSON.stringify({ uid: user.uid, ...profileData }));
                 showSplash("REGISTRY SAVED", "Initializing_Tactical_HUD");
-                setTimeout(() => navigateTo('./arena.html'), 1500);
+                setTimeout(() => navigateTo('../arena/index.html'), 1500);
             } catch (err) { notify("ERR: REGISTRY_WRITE_FAILED", "error"); saveProfileBtn.disabled = false; }
         });
 
@@ -744,7 +744,7 @@
                     if (data.name && data.role && data.dob && data.phone) {
                         localStorage.setItem('matrix_user_session', JSON.stringify({ uid: user.uid, ...data }));
                         showSplash("WELCOME BACK", `${data.name.toUpperCase()} // ACCESS_GRANTED`);
-                        setTimeout(() => navigateTo('./arena.html'), 1800);
+                        setTimeout(() => navigateTo('../arena/index.html'), 1800);
                         return;
                     }
                 }
