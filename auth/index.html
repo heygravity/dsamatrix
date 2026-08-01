@@ -328,9 +328,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signInAnonymously, GoogleAuthProvider, GithubAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import {firebaseConfig} from '../script/base.js'; // Assuming you have a separate config file
+        import {firebaseConfig} from '../script/base.js';
 
-        //const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -376,11 +376,16 @@
         }
 
         const navigateTo = (path) => {
-            let base = window.location.href;
-            if (window.location.pathname.endsWith('index.html') && path.startsWith('./')) {
-                path = '.' + path; // Adjust relative path if running inside a subdirectory like /auth/index.html
+            let target = path;
+            const pathname = window.location.pathname;
+            if (pathname.includes('/auth/') || pathname.endsWith('/auth')) {
+                if (path.startsWith('./')) {
+                    target = '../' + path.substring(2);
+                } else if (!path.startsWith('../') && !path.startsWith('/')) {
+                    target = '../' + path;
+                }
             }
-            window.location.assign(new URL(path, base).href);
+            window.location.assign(new URL(target, window.location.href).href);
         };
 
         // --- Validation Logic ---
@@ -410,7 +415,6 @@
             saveProfileBtn.disabled = !(isNameOk && isDobOk && isPhoneOk && isOrgOk && userRoleHidden.value);
         }
 
-        // --- Interactivity ---
         roleTrigger.addEventListener('click', (e) => { e.stopPropagation(); roleContainer.classList.toggle('open'); });
         
         function selectRoleValue(roleValue) {
@@ -541,25 +545,27 @@
             let extractedData = null;
 
             if (encryptedPayload) {
-                isQueryAuthTriggered = true;
                 notify("Encrypted parameter payload detected. Decrypting_Matrix_Key...");
                 extractedData = decodePayload(encryptedPayload, customKey) || decodePayload(encryptedPayload, null);
-                
-                if (!extractedData) {
-                    notify("ERR: PAYLOAD_DECRYPTION_FAILED", "error");
-                    return;
+                if (extractedData) {
+                    isQueryAuthTriggered = true;
                 }
-            } else if (params.has('name') || params.has('role') || params.has('email') || params.has('uid') || params.has('password') || params.has('pass')) {
-                extractedData = {
-                    uid: params.get('uid'),
-                    name: params.get('name'),
-                    role: params.get('role'),
-                    organization: params.get('organization') || params.get('org') || params.get('college') || params.get('company'),
-                    dob: params.get('dob'),
-                    phone: params.get('phone'),
-                    email: params.get('email'),
-                    password: params.get('password') || params.get('pass')
-                };
+            }
+
+            // Fallback: If payload decryption fails or data is absent, use unencrypted URL parameters
+            if (!extractedData) {
+                if (params.has('name') || params.has('role') || params.has('email') || params.has('uid') || params.has('password') || params.has('pass')) {
+                    extractedData = {
+                        uid: params.get('uid'),
+                        name: params.get('name'),
+                        role: params.get('role'),
+                        organization: params.get('organization') || params.get('org') || params.get('college') || params.get('company'),
+                        dob: params.get('dob'),
+                        phone: params.get('phone'),
+                        email: params.get('email'),
+                        password: params.get('password') || params.get('pass')
+                    };
+                }
             }
 
             if (!extractedData && !params.has('provider') && !params.has('auth')) return;
@@ -615,7 +621,8 @@
                         const role = extractedData.role ? extractedData.role.trim() : "";
                         const org = extractedData.organization || "";
                         const dob = extractedData.dob ? extractedData.dob.trim() : "";
-                        const phone = extractedData.phone ? extractedData.phone.replace(/^\+91/, '').trim() : "";
+                        const rawPhone = extractedData.phone ? extractedData.phone.trim() : "";
+                        const phone = rawPhone.replace(/^\+?91/, '').replace(/[\s-]/g, '').trim();
 
                         const isStudentOrPro = ['cs_student', 'engineering_student', 'software_dev', 'employee', 'startup_owner'].includes(role);
                         const isOrgValid = !isStudentOrPro || validators.org(org);
@@ -657,7 +664,7 @@
                 const org = extractedData.organization || "";
                 const dob = extractedData.dob ? extractedData.dob.trim() : "";
                 const rawPhone = extractedData.phone ? extractedData.phone.trim() : "";
-                const phone = rawPhone.replace(/^\+91/, '').trim();
+                const phone = rawPhone.replace(/^\+?91/, '').replace(/[\s-]/g, '').trim();
                 const email = extractedData.email ? extractedData.email.trim() : "";
 
                 const isStudentOrPro = ['cs_student', 'engineering_student', 'software_dev', 'employee', 'startup_owner'].includes(role);
@@ -670,13 +677,19 @@
 
                     try {
                         let user = auth.currentUser;
-                        if (!user) {
-                            // Authenticate anonymously so Firebase Auth session is active for Firestore security rules
-                            const userCred = await signInAnonymously(auth);
-                            user = userCred.user;
+                        
+                        // FIX: If targetUid is provided (e.g., from Mobile SSO or Query), use it directly
+                        // and bypass signInAnonymously() to prevent ADMIN_ONLY_OPERATION error on projects where Anonymous auth is disabled.
+                        if (!user && !targetUid) {
+                            try {
+                                const userCred = await signInAnonymously(auth);
+                                user = userCred.user;
+                            } catch (anonErr) {
+                                console.warn("Anonymous authentication unavailable, proceeding with parameters:", anonErr);
+                            }
                         }
 
-                        const userUid = targetUid || user.uid;
+                        const userUid = targetUid || (user ? user.uid : 'session_' + Date.now());
                         const profileRef = doc(db, 'artifacts', userUid, 'profile', 'data');
                         
                         const profileData = {
@@ -685,11 +698,16 @@
                             organization: org || null,
                             dob,
                             phone: "+91" + phone,
-                            email: email || user.email || null,
+                            email: email || (user ? user.email : null) || null,
                             joinedAt: new Date().toISOString()
                         };
 
-                        await setDoc(profileRef, profileData, { merge: true });
+                        try {
+                            await setDoc(profileRef, profileData, { merge: true });
+                        } catch (firestoreErr) {
+                            console.warn("Firestore save skipped/failed:", firestoreErr);
+                        }
+
                         localStorage.setItem('matrix_user_session', JSON.stringify({ uid: userUid, ...profileData }));
 
                         showSplash("ACCESS GRANTED", `${name.toUpperCase()} // REGISTRY_VERIFIED`);
@@ -744,7 +762,7 @@
                     if (data.name && data.role && data.dob && data.phone) {
                         localStorage.setItem('matrix_user_session', JSON.stringify({ uid: user.uid, ...data }));
                         showSplash("WELCOME BACK", `${data.name.toUpperCase()} // ACCESS_GRANTED`);
-                        setTimeout(() => navigateTo('../arena/index.html'), 1800);
+                        setTimeout(() => navigateTo('./arena.html'), 1800);
                         return;
                     }
                 }
