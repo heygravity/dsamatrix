@@ -187,7 +187,6 @@
 </head>
 <body class="bg-grain px-6">
 
-    <!-- Global Splash Screen -->
     <div id="global-splash">
         <div class="text-center">
             <h2 id="splash-title" class="text-xl font-black tracking-[0.4em] uppercase italic text-white mb-2">Synchronizing</h2>
@@ -204,7 +203,7 @@
                 <svg class="w-6 h-6 text-black" fill="currentColor" viewBox="0 0 24 24"><path d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
             </div>
             <h1 class="text-2xl font-extrabold tracking-tighter uppercase mb-2">Matrix Access</h1>
-            <p class="text-zinc-500 text-[10px] mono uppercase tracking-[0.3em]">Protocol_Authorization_v5.1</p>
+            <p class="text-zinc-500 text-[10px] mono uppercase tracking-[0.3em]">Protocol_Authorization_v5.4</p>
         </div>
 
         <div id="auth-card" class="glass p-8 md:p-10 rounded-[2.5rem] relative overflow-hidden">
@@ -253,14 +252,13 @@
 
                 <div class="text-center">
                     <p class="text-[8px] mono text-zinc-600 uppercase tracking-widest leading-relaxed">
-                        Authorized Login Only via Email. <br>New specialists must use social protocol link.
+                        Authorized Login Only via Email or Encrypted Link. <br>New specialists must use social protocol link.
                     </p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Onboarding Modal (Detected New Social Identity) -->
     <div id="profile-modal">
         <div id="profile-card" class="glass p-8 md:p-10 rounded-[3rem] w-full max-w-md mx-6 space-y-6 overflow-y-auto max-h-[90vh]">
             <div class="text-center">
@@ -283,16 +281,22 @@
                             <svg class="w-3 h-3 text-zinc-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path d="M19 9l-7 7-7-7"/></svg>
                         </div>
                         <div class="custom-select-options">
-                            <div class="custom-option" data-value="cs_student">Computer Science Student</div>
-                            <div class="custom-option" data-value="engineering_student">Engineering Student</div>
-                            <div class="custom-option" data-value="software_dev">Software Developer</div>
-                            <div class="custom-option" data-value="competitive_prog">Competitive Programmer</div>
-                            <div class="custom-option" data-value="dsa_educator">DSA Educator</div>
-                            <div class="custom-option" data-value="hobbyist">Hobbyist Specialist</div>
-                            <div class="custom-option" data-value="other">Other_Anomaly</div>
+                            <div class="custom-option" data-value="cs_student" data-group="student">Computer Science Student</div>
+                            <div class="custom-option" data-value="engineering_student" data-group="student">Engineering Student</div>
+                            <div class="custom-option" data-value="software_dev" data-group="pro">Software Developer</div>
+                            <div class="custom-option" data-value="employee" data-group="pro">Professional Employee</div>
+                            <div class="custom-option" data-value="startup_owner" data-group="pro">Startup Owner / Founder</div>
+                            <div class="custom-option" data-value="other" data-group="other">Other_Anomaly</div>
                         </div>
                         <input type="hidden" id="user-role" value="">
                     </div>
+                </div>
+
+                <!-- Adaptive Organization Input -->
+                <div id="org-field-container" class="space-y-1 hidden">
+                    <label id="org-label" class="text-[9px] uppercase tracking-widest text-zinc-500 font-bold ml-1">Organization Name</label>
+                    <input type="text" id="user-org" maxlength="50" class="w-full rounded-2xl px-6 py-4 bg-zinc-900 border border-zinc-800 text-white text-sm" placeholder="Registry identifier...">
+                    <p id="error-org" class="error-msg">Input required (Alphabets only)</p>
                 </div>
 
                 <div class="space-y-1">
@@ -315,7 +319,6 @@
         </div>
     </div>
 
-    <!-- Notification UI -->
     <div id="notification" class="glass px-6 py-4 rounded-2xl flex items-center gap-4 border-l-4 border-l-indigo-500 min-w-[280px] max-w-[90%] shadow-2xl">
         <div id="notif-led" class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></div>
         <span id="notification-text" class="text-[10px] font-bold tracking-wider text-zinc-200 uppercase">System Ready</span>
@@ -323,29 +326,18 @@
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
-        import { 
-            getAuth, onAuthStateChanged, signInWithEmailAndPassword, 
-            signInWithPopup, GoogleAuthProvider, GithubAuthProvider 
-        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signInAnonymously, GoogleAuthProvider, GithubAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
-        import {firebaseConfig} from '../script/base.js';
 
-        // Environment Setup
-        //const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
 
-        // Active OAuth Providers
-        const providers = {
-            google: new GoogleAuthProvider(),
-            github: new GithubAuthProvider()
-        };
+        const providers = { google: new GoogleAuthProvider(), github: new GithubAuthProvider() };
 
-        // UI Target Nodes
         const globalSplash = document.getElementById('global-splash');
         const splashTitle = document.getElementById('splash-title');
-        const splashDesc = document.getElementById('splash-desc');
         const authCard = document.getElementById('auth-card');
         const emailInput = document.getElementById('auth-email');
         const passwordInput = document.getElementById('auth-password');
@@ -354,23 +346,23 @@
         const profileModal = document.getElementById('profile-modal');
         const userNameInput = document.getElementById('user-name');
         const userRoleHidden = document.getElementById('user-role');
+        const userOrgInput = document.getElementById('user-org');
+        const orgContainer = document.getElementById('org-field-container');
+        const orgLabel = document.getElementById('org-label');
         const userDobInput = document.getElementById('user-dob');
         const userPhoneInput = document.getElementById('user-phone');
         const saveProfileBtn = document.getElementById('save-profile');
 
         const roleContainer = document.getElementById('role-select-container');
         const roleTrigger = document.getElementById('role-trigger');
-        const roleLabel = document.getElementById('role-label');
+        const roleLabelText = document.getElementById('role-label');
         const roleOptions = document.querySelectorAll('.custom-option');
 
-        // --- System Logic Helpers ---
-        function showSplash(title, desc) {
-            splashTitle.innerText = title;
-            splashDesc.innerText = desc;
-            globalSplash.classList.add('active');
-        }
+        let isQueryAuthTriggered = false;
+
+        // --- Helpers ---
+        function showSplash(title, desc) { splashTitle.innerText = title; document.getElementById('splash-desc').innerText = desc; globalSplash.classList.add('active'); }
         function hideSplash() { globalSplash.classList.remove('active'); }
-        
         function notify(message, type = 'status') {
             document.getElementById('notification-text').innerText = message;
             document.getElementById('notification').classList.add('active');
@@ -384,76 +376,89 @@
 
         const navigateTo = (path) => window.location.assign(new URL(path, window.location.origin + window.location.pathname).href);
 
-        // --- Validation Hub ---
+        // --- Validation Logic ---
         const validators = {
             email: (val) => /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(val),
-            name: (val) => val.trim().split(' ').length >= 2,
-            role: (val) => !!val,
+            name: (val) => val && val.trim().split(' ').length >= 2,
+            org: (val) => val && val.trim().length >= 2,
             phone: (val) => {
-                // Returns boolean for global validity
-                return /^[6-9]\d{9}$/.test(val) && !/^(.)\1{9}$/.test(val);
+                if (!val) return false;
+                const cleanPhone = val.replace(/^\+91/, '').trim();
+                return /^[6-9]\d{9}$/.test(cleanPhone) && !/^(.)\1{9}$/.test(cleanPhone);
             },
             dob: (val) => {
-                if (!/^\d{2}-\d{2}-\d{4}$/.test(val)) return false;
+                if (!val || !/^\d{2}-\d{2}-\d{4}$/.test(val)) return false;
                 const [d, m, y] = val.split('-').map(Number);
                 const age = new Date().getFullYear() - y;
                 return age >= 12 && age <= 100;
-            }
+            },
+            role: (val) => ['cs_student', 'engineering_student', 'software_dev', 'employee', 'startup_owner', 'other'].includes(val)
         };
 
         function checkFormValidity() {
             const isNameOk = validators.name(userNameInput.value);
-            const isRoleOk = validators.role(userRoleHidden.value);
             const isDobOk = validators.dob(userDobInput.value);
             const isPhoneOk = validators.phone(userPhoneInput.value);
-            saveProfileBtn.disabled = !(isNameOk && isRoleOk && isDobOk && isPhoneOk);
+            const isOrgOk = orgContainer.classList.contains('hidden') || validators.org(userOrgInput.value);
+            saveProfileBtn.disabled = !(isNameOk && isDobOk && isPhoneOk && isOrgOk && userRoleHidden.value);
         }
 
-        // --- UI Interactions ---
+        // --- Interactivity ---
         roleTrigger.addEventListener('click', (e) => { e.stopPropagation(); roleContainer.classList.toggle('open'); });
-        roleOptions.forEach(opt => opt.addEventListener('click', () => {
+        
+        function selectRoleValue(roleValue) {
+            const opt = Array.from(roleOptions).find(o => o.dataset.value === roleValue);
+            if (!opt) return;
+            const group = opt.dataset.group;
             userRoleHidden.value = opt.dataset.value;
-            roleLabel.innerText = opt.innerText;
+            roleLabelText.innerText = opt.innerText;
             roleTrigger.classList.add('selected');
             roleOptions.forEach(o => o.classList.remove('active'));
             opt.classList.add('active');
+
+            if (group === 'student') {
+                orgContainer.classList.remove('hidden');
+                orgLabel.innerText = "College Name";
+                userOrgInput.placeholder = "Technical University / College...";
+            } else if (group === 'pro') {
+                orgContainer.classList.remove('hidden');
+                orgLabel.innerText = "Company Name";
+                userOrgInput.placeholder = "Organization / Enterprise...";
+            } else {
+                orgContainer.classList.add('hidden');
+                userOrgInput.value = "";
+            }
+            checkFormValidity();
+        }
+
+        roleOptions.forEach(opt => opt.addEventListener('click', () => {
+            selectRoleValue(opt.dataset.value);
             roleContainer.classList.remove('open');
-            checkFormValidity();
-        }));
-        window.addEventListener('click', () => roleContainer.classList.remove('open'));
-
-        [userNameInput, userDobInput].forEach(el => el.addEventListener('input', () => {
-            if(el.id === 'user-name') document.getElementById('error-name').classList.toggle('visible', !validators.name(el.value) && el.value.length > 0);
-            if(el.id === 'user-dob') document.getElementById('error-dob').classList.toggle('visible', !validators.dob(el.value) && el.value.length === 10);
-            checkFormValidity();
         }));
 
-        // Dynamic Mobile Sequence Validation (Parity with Request)
+        userOrgInput.addEventListener('input', (e) => {
+            e.target.value = e.target.value.replace(/[^a-zA-Z\s]/g, '');
+            document.getElementById('error-org').classList.toggle('visible', !validators.org(e.target.value) && e.target.value.length > 0);
+            checkFormValidity();
+        });
+
+        userNameInput.addEventListener('input', () => {
+            document.getElementById('error-name').classList.toggle('visible', !validators.name(userNameInput.value) && userNameInput.value.length > 0);
+            checkFormValidity();
+        });
+
         userPhoneInput.addEventListener('input', (e) => {
             const val = e.target.value;
             const errEl = document.getElementById('error-phone');
             let msg = "";
             let isInvalid = false;
-
             if (val.length > 0) {
-                if (!/^[6-9]/.test(val)) {
-                    msg = "Start with 6, 7, 8, or 9";
-                    isInvalid = true;
-                } else if (val.length < 10) {
-                    msg = `Input 10 digits (${val.length}/10)`;
-                    isInvalid = true;
-                } else if (/^(.)\1{9}$/.test(val)) {
-                    msg = "Repeating anomaly detected";
-                    isInvalid = true;
-                }
+                if (!/^[6-9]/.test(val)) { msg = "Start with 6, 7, 8, or 9"; isInvalid = true; }
+                else if (val.length < 10) { msg = `Input 10 digits (${val.length}/10)`; isInvalid = true; }
+                else if (/^(.)\1{9}$/.test(val)) { msg = "Repeating anomaly detected"; isInvalid = true; }
             }
-
-            if (isInvalid) {
-                errEl.innerText = msg;
-                errEl.classList.add('visible');
-            } else {
-                errEl.classList.remove('visible');
-            }
+            if (isInvalid) { errEl.innerText = msg; errEl.classList.add('visible'); } 
+            else errEl.classList.remove('visible');
             checkFormValidity();
         });
 
@@ -462,58 +467,216 @@
             if (val.length > 2 && val.length <= 4) val = val.slice(0, 2) + '-' + val.slice(2);
             if (val.length > 4) val = val.slice(0, 2) + '-' + val.slice(2, 4) + '-' + val.slice(4, 8);
             e.target.value = val;
+            document.getElementById('error-dob').classList.toggle('visible', !validators.dob(val) && val.length === 10);
+            checkFormValidity();
         });
 
         emailInput.addEventListener('input', () => {
             document.getElementById('auth-error-email').classList.toggle('visible', !validators.email(emailInput.value) && emailInput.value.length > 0);
         });
 
-        // --- Auth Execution Protocols ---
+        // --- Entry Sequences ---
         const executeSocialAuth = async (providerName) => {
             showSplash("AUTHORIZING", "Requesting_Social_Handshake...");
-            try {
-                await signInWithPopup(auth, providers[providerName]);
+            try { await signInWithPopup(auth, providers[providerName]); } 
+            catch (error) { hideSplash(); notify("ERR: SIGNAL_INTERRUPTED", "error"); }
+        };
+
+        ['google', 'github'].forEach(p => document.getElementById(`auth-${p}`).addEventListener('click', () => executeSocialAuth(p)));
+
+        const performLogin = async (emailVal, passVal) => {
+            if (!validators.email(emailVal) || passVal.length < 6) return notify("ERR: INVALID_CREDENTIALS", "error");
+            showSplash("AUTHORIZING", "Verifying_Identity_Signature...");
+            try { 
+                await signInWithEmailAndPassword(auth, emailVal.trim(), passVal); 
             } catch (error) {
                 hideSplash();
-                notify("ERR: SIGNAL_INTERRUPTED", "error");
+                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                    notify("Account doesn't exist with the email, use social provider or check password", "error");
+                } else {
+                    notify(`ERR: ${error.code.split('/')[1].toUpperCase().replace(/-/g, '_')}`, "error");
+                }
             }
         };
 
-        ['google', 'github'].forEach(p => {
-            const btn = document.getElementById(`auth-${p}`);
-            if (btn) btn.addEventListener('click', () => executeSocialAuth(p));
-        });
+        mainAuthBtn.addEventListener('click', () => performLogin(emailInput.value, passwordInput.value));
 
-        // --- Gateway Submission Logic (Strict Login Only) ---
-        mainAuthBtn.addEventListener('click', async () => {
-            const email = emailInput.value.trim();
-            const password = passwordInput.value;
+        /**
+         * Decrypts and parses URL parameter payloads.
+         */
+        function decodePayload(encodedStr, key = 'DSA_MATRIX_SECRET') {
+            try {
+                let base64 = encodedStr.replace(/-/g, '+').replace(/_/g, '/');
+                while (base64.length % 4) base64 += '=';
+                let jsonStr = atob(base64);
 
-            if (!validators.email(email) || password.length < 6) {
-                return notify("ERR: INVALID_CREDENTIALS", "error");
+                if (key) {
+                    let decoded = '';
+                    for (let i = 0; i < jsonStr.length; i++) {
+                        decoded += String.fromCharCode(jsonStr.charCodeAt(i) ^ key.charCodeAt(i % key.length));
+                    }
+                    try { return JSON.parse(decoded); } catch (e) { }
+                }
+
+                return JSON.parse(jsonStr);
+            } catch (err) {
+                return null;
+            }
+        }
+
+        const checkQueryParamsAndAuthenticate = async () => {
+            if (isQueryAuthTriggered) return;
+            const params = new URLSearchParams(window.location.search);
+            
+            const encryptedPayload = params.get('data') || params.get('payload');
+            const customKey = params.get('key') || 'DSA_MATRIX_SECRET';
+
+            let extractedData = null;
+
+            if (encryptedPayload) {
+                isQueryAuthTriggered = true;
+                notify("Encrypted parameter payload detected. Decrypting_Matrix_Key...");
+                extractedData = decodePayload(encryptedPayload, customKey) || decodePayload(encryptedPayload, null);
+                
+                if (!extractedData) {
+                    notify("ERR: PAYLOAD_DECRYPTION_FAILED", "error");
+                    return;
+                }
+            } else if (params.has('name') || params.has('role') || params.has('email') || params.has('uid') || params.has('password') || params.has('pass')) {
+                extractedData = {
+                    uid: params.get('uid'),
+                    name: params.get('name'),
+                    role: params.get('role'),
+                    organization: params.get('organization') || params.get('org') || params.get('college') || params.get('company'),
+                    dob: params.get('dob'),
+                    phone: params.get('phone'),
+                    email: params.get('email'),
+                    password: params.get('password') || params.get('pass')
+                };
             }
 
-            showSplash("AUTHORIZING", "Verifying_Identity_Signature...");
-            
-            try {
-                // Attempt direct sign-in. If email not in system, Firebase returns user-not-found or invalid-credential.
-                await signInWithEmailAndPassword(auth, email, password);
-            } catch (error) {
-                hideSplash();
-                
-                // Specifically handling "Account doesn't exist" as per user request
-                if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
-                    notify("Account doesn't exist with the email, use the below provider for login", "error");
-                } else if (error.code === 'auth/wrong-password') {
-                    notify("ERR: INCORRECT_PASSWORD", "error");
-                } else {
-                    const code = error.code.split('/')[1].toUpperCase().replace(/-/g, '_');
-                    notify(`ERR: ${code}`, "error");
+            const queryEmail = (extractedData && extractedData.email) || params.get('email');
+            const queryPass = (extractedData && extractedData.password) || params.get('password') || params.get('pass');
+            const queryProvider = params.get('provider') || params.get('auth');
+
+            if (queryProvider) {
+                const providerName = queryProvider.toLowerCase();
+                if (providerName === 'google' || providerName === 'github') {
+                    isQueryAuthTriggered = true;
+                    notify(`URL parameters detected. Initiating ${providerName.toUpperCase()} protocol...`);
+                    await executeSocialAuth(providerName);
+                    return;
                 }
             }
-        });
 
-        // --- Profile Persistence Protocol ---
+            if (queryEmail && queryPass) {
+                isQueryAuthTriggered = true;
+                emailInput.value = queryEmail.trim();
+                passwordInput.value = queryPass;
+
+                if (!validators.email(queryEmail) || queryPass.length < 6) {
+                    notify("ERR: INVALID_QUERY_CREDENTIALS_FORMAT", "error");
+                    return;
+                }
+
+                showSplash("AUTHORIZING", "Verifying_Firebase_Auth_Record...");
+
+                try {
+                    // Step 1: Verify email & password exist in Firebase Authentication
+                    const userCredential = await signInWithEmailAndPassword(auth, queryEmail.trim(), queryPass);
+                    const user = userCredential.user;
+
+                    showSplash("CHECKING REGISTRY", "Locating_User_Profile_Data...");
+
+                    // Step 2: Check Firestore records for this user
+                    const profileRef = doc(db, 'artifacts', user.uid, 'profile', 'data');
+                    const profileSnap = await getDoc(profileRef);
+
+                    if (profileSnap.exists()) {
+                        const existingData = profileSnap.data();
+                        if (existingData.name && existingData.role && existingData.dob && existingData.phone) {
+                            localStorage.setItem('matrix_user_session', JSON.stringify({ uid: user.uid, ...existingData }));
+                            showSplash("ACCESS GRANTED", `${existingData.name.toUpperCase()} // REGISTRY_VERIFIED`);
+                            setTimeout(() => navigateTo('./arena.html'), 1200);
+                            return;
+                        }
+                    }
+
+                    // Step 3: If Firestore record is missing/incomplete, check if query/payload contains profile details
+                    if (extractedData) {
+                        const name = extractedData.name ? extractedData.name.trim() : "";
+                        const role = extractedData.role ? extractedData.role.trim() : "";
+                        const org = extractedData.organization || extractedData.org || extractedData.college || extractedData.company || "";
+                        const dob = extractedData.dob ? extractedData.dob.trim() : "";
+                        const phone = extractedData.phone ? extractedData.phone.replace(/^\+91/, '').trim() : "";
+
+                        const isStudentOrPro = ['cs_student', 'engineering_student', 'software_dev', 'employee', 'startup_owner'].includes(role);
+                        const isOrgValid = !isStudentOrPro || validators.org(org);
+
+                        const isProfileValid = validators.name(name) && validators.role(role) && validators.dob(dob) && validators.phone(phone) && isOrgValid;
+
+                        if (isProfileValid) {
+                            const profileData = { 
+                                name,
+                                role,
+                                organization: org || null,
+                                dob, 
+                                phone: "+91" + phone,
+                                email: user.email || queryEmail,
+                                joinedAt: new Date().toISOString() 
+                            };
+
+                            await setDoc(profileRef, profileData, { merge: true });
+                            localStorage.setItem('matrix_user_session', JSON.stringify({ uid: user.uid, ...profileData }));
+                            
+                            showSplash("ACCESS GRANTED", `${name.toUpperCase()} // REGISTRY_CREATED`);
+                            setTimeout(() => navigateTo('./arena.html'), 1200);
+                            return;
+                        } else {
+                            // Populate form fields for missing data
+                            if (name) userNameInput.value = name;
+                            if (role) selectRoleValue(role);
+                            if (org) userOrgInput.value = org;
+                            if (dob) userDobInput.value = dob;
+                            if (phone) userPhoneInput.value = phone;
+                            checkFormValidity();
+                        }
+                    }
+
+                    // Step 4: Prompt user with completion modal if records are missing
+                    hideSplash();
+                    profileModal.style.display = 'flex';
+                    notify("Authentication successful. Complete remaining registry fields...", "status");
+
+                } catch (error) {
+                    hideSplash();
+                    if (error.code === 'auth/user-not-found' || error.code === 'auth/invalid-credential') {
+                        notify("ERR: ACCOUNT_NOT_FOUND_OR_INVALID_PASSWORD", "error");
+                    } else {
+                        notify(`ERR: ${error.code.split('/')[1].toUpperCase().replace(/-/g, '_')}`, "error");
+                    }
+                }
+            } else if (extractedData) {
+                // If query has profile data but no password, pre-fill the fields
+                const name = extractedData.name ? extractedData.name.trim() : "";
+                const role = extractedData.role ? extractedData.role.trim() : "";
+                const org = extractedData.organization || extractedData.org || extractedData.college || extractedData.company || "";
+                const dob = extractedData.dob ? extractedData.dob.trim() : "";
+                const phone = extractedData.phone ? extractedData.phone.replace(/^\+91/, '').trim() : "";
+                const email = extractedData.email ? extractedData.email.trim() : "";
+
+                if (email) emailInput.value = email;
+                if (name) userNameInput.value = name;
+                if (role) selectRoleValue(role);
+                if (org) userOrgInput.value = org;
+                if (dob) userDobInput.value = dob;
+                if (phone) userPhoneInput.value = phone;
+                checkFormValidity();
+                
+                notify("Query parameters detected. Enter password or sign in with social provider.", "status");
+            }
+        };
+
         saveProfileBtn.addEventListener('click', async () => {
             const user = auth.currentUser;
             if (!user) return;
@@ -522,6 +685,7 @@
                 const profileData = { 
                     name: userNameInput.value.trim(),
                     role: userRoleHidden.value,
+                    organization: userOrgInput.value.trim() || null,
                     dob: userDobInput.value, 
                     phone: "+91" + userPhoneInput.value,
                     email: user.email || emailInput.value,
@@ -530,34 +694,33 @@
                 await setDoc(doc(db, 'artifacts', user.uid, 'profile', 'data'), profileData);
                 localStorage.setItem('matrix_user_session', JSON.stringify({ uid: user.uid, ...profileData }));
                 showSplash("REGISTRY SAVED", "Initializing_Tactical_HUD");
-                setTimeout(() => navigateTo('../arena/index.html'), 1500);
-            } catch (err) {
-                notify("ERR: REGISTRY_WRITE_FAILED", "error");
-                saveProfileBtn.disabled = false;
-            }
+                setTimeout(() => navigateTo('./arena.html'), 1500);
+            } catch (err) { notify("ERR: REGISTRY_WRITE_FAILED", "error"); saveProfileBtn.disabled = false; }
         });
 
-        // --- Master Authorization Observer ---
         onAuthStateChanged(auth, async (user) => {
             if (user) {
                 showSplash("SYNCHRONIZING", "Retrieving_Logic_Buffers...");
                 const profileRef = doc(db, 'artifacts', user.uid, 'profile', 'data');
                 const profileSnap = await getDoc(profileRef);
-
                 if (profileSnap.exists()) {
                     const data = profileSnap.data();
                     if (data.name && data.role && data.dob && data.phone) {
                         localStorage.setItem('matrix_user_session', JSON.stringify({ uid: user.uid, ...data }));
                         showSplash("WELCOME BACK", `${data.name.toUpperCase()} // ACCESS_GRANTED`);
-                        setTimeout(() => navigateTo('../arena/index.html'), 2000);
+                        setTimeout(() => navigateTo('./arena.html'), 1800);
                         return;
                     }
                 }
-                
                 hideSplash();
                 profileModal.style.display = 'flex';
+                checkQueryParamsAndAuthenticate();
+            } else {
+                checkQueryParamsAndAuthenticate();
             }
         });
+
+        window.addEventListener('click', () => roleContainer.classList.remove('open'));
     </script>
 </body>
 </html>
