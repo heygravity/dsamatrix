@@ -328,8 +328,9 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, onAuthStateChanged, signInWithEmailAndPassword, signInWithPopup, signInAnonymously, GoogleAuthProvider, GithubAuthProvider } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, doc, getDoc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import {firebaseConfig} from '../scripts/firebase-config.js'; // Assuming you have a separate config file
 
-        const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
+        //const firebaseConfig = JSON.parse(typeof __firebase_config !== 'undefined' ? __firebase_config : '{}');
         const app = initializeApp(firebaseConfig);
         const auth = getAuth(app);
         const db = getFirestore(app);
@@ -374,7 +375,13 @@
             setTimeout(() => document.getElementById('notification').classList.remove('active'), 5000);
         }
 
-        const navigateTo = (path) => window.location.assign(new URL(path, window.location.origin + window.location.pathname).href);
+        const navigateTo = (path) => {
+            let base = window.location.href;
+            if (window.location.pathname.endsWith('/auth/index.html') && path.startsWith('./')) {
+                path = '.' + path; // Adjust relative path if running inside a subdirectory like /auth/index.html
+            }
+            window.location.assign(new URL(path, base).href);
+        };
 
         // --- Validation Logic ---
         const validators = {
@@ -555,9 +562,12 @@
                 };
             }
 
+            if (!extractedData && !params.has('provider') && !params.has('auth')) return;
+
             const queryEmail = (extractedData && extractedData.email) || params.get('email');
             const queryPass = (extractedData && extractedData.password) || params.get('password') || params.get('pass');
             const queryProvider = params.get('provider') || params.get('auth');
+            const targetUid = (extractedData && extractedData.uid) || params.get('uid');
 
             if (queryProvider) {
                 const providerName = queryProvider.toLowerCase();
@@ -569,6 +579,7 @@
                 }
             }
 
+            // Case 1: Both Email and Password are provided in query parameters
             if (queryEmail && queryPass) {
                 isQueryAuthTriggered = true;
                 emailInput.value = queryEmail.trim();
@@ -582,68 +593,50 @@
                 showSplash("AUTHORIZING", "Verifying_Firebase_Auth_Record...");
 
                 try {
-                    // Step 1: Verify email & password exist in Firebase Authentication
                     const userCredential = await signInWithEmailAndPassword(auth, queryEmail.trim(), queryPass);
                     const user = userCredential.user;
 
-                    showSplash("CHECKING REGISTRY", "Locating_User_Profile_Data...");
-
-                    // Step 2: Check Firestore records for this user
-                    const profileRef = doc(db, 'artifacts', user.uid, 'profile', 'data');
+                    const profileRef = doc(db, 'artifacts', targetUid || user.uid, 'profile', 'data');
                     const profileSnap = await getDoc(profileRef);
 
                     if (profileSnap.exists()) {
                         const existingData = profileSnap.data();
                         if (existingData.name && existingData.role && existingData.dob && existingData.phone) {
-                            localStorage.setItem('matrix_user_session', JSON.stringify({ uid: user.uid, ...existingData }));
+                            localStorage.setItem('matrix_user_session', JSON.stringify({ uid: targetUid || user.uid, ...existingData }));
                             showSplash("ACCESS GRANTED", `${existingData.name.toUpperCase()} // REGISTRY_VERIFIED`);
                             setTimeout(() => navigateTo('./arena.html'), 1200);
                             return;
                         }
                     }
 
-                    // Step 3: If Firestore record is missing/incomplete, check if query/payload contains profile details
+                    // Write URL profile data if Firestore profile is missing
                     if (extractedData) {
                         const name = extractedData.name ? extractedData.name.trim() : "";
                         const role = extractedData.role ? extractedData.role.trim() : "";
-                        const org = extractedData.organization || extractedData.org || extractedData.college || extractedData.company || "";
+                        const org = extractedData.organization || "";
                         const dob = extractedData.dob ? extractedData.dob.trim() : "";
                         const phone = extractedData.phone ? extractedData.phone.replace(/^\+91/, '').trim() : "";
 
                         const isStudentOrPro = ['cs_student', 'engineering_student', 'software_dev', 'employee', 'startup_owner'].includes(role);
                         const isOrgValid = !isStudentOrPro || validators.org(org);
-
                         const isProfileValid = validators.name(name) && validators.role(role) && validators.dob(dob) && validators.phone(phone) && isOrgValid;
 
                         if (isProfileValid) {
                             const profileData = { 
-                                name,
-                                role,
-                                organization: org || null,
-                                dob, 
-                                phone: "+91" + phone,
-                                email: user.email || queryEmail,
+                                name, role, organization: org || null, dob, 
+                                phone: "+91" + phone, email: user.email || queryEmail, 
                                 joinedAt: new Date().toISOString() 
                             };
 
                             await setDoc(profileRef, profileData, { merge: true });
-                            localStorage.setItem('matrix_user_session', JSON.stringify({ uid: user.uid, ...profileData }));
+                            localStorage.setItem('matrix_user_session', JSON.stringify({ uid: targetUid || user.uid, ...profileData }));
                             
                             showSplash("ACCESS GRANTED", `${name.toUpperCase()} // REGISTRY_CREATED`);
                             setTimeout(() => navigateTo('./arena.html'), 1200);
                             return;
-                        } else {
-                            // Populate form fields for missing data
-                            if (name) userNameInput.value = name;
-                            if (role) selectRoleValue(role);
-                            if (org) userOrgInput.value = org;
-                            if (dob) userDobInput.value = dob;
-                            if (phone) userPhoneInput.value = phone;
-                            checkFormValidity();
                         }
                     }
 
-                    // Step 4: Prompt user with completion modal if records are missing
                     hideSplash();
                     profileModal.style.display = 'flex';
                     notify("Authentication successful. Complete remaining registry fields...", "status");
@@ -656,24 +649,67 @@
                         notify(`ERR: ${error.code.split('/')[1].toUpperCase().replace(/-/g, '_')}`, "error");
                     }
                 }
-            } else if (extractedData) {
-                // If query has profile data but no password, pre-fill the fields
+            } 
+            // Case 2: Complete profile data provided (e.g. from Mobile App SSO or URL parameters) without password
+            else if (extractedData) {
                 const name = extractedData.name ? extractedData.name.trim() : "";
                 const role = extractedData.role ? extractedData.role.trim() : "";
-                const org = extractedData.organization || extractedData.org || extractedData.college || extractedData.company || "";
+                const org = extractedData.organization || "";
                 const dob = extractedData.dob ? extractedData.dob.trim() : "";
-                const phone = extractedData.phone ? extractedData.phone.replace(/^\+91/, '').trim() : "";
+                const rawPhone = extractedData.phone ? extractedData.phone.trim() : "";
+                const phone = rawPhone.replace(/^\+91/, '').trim();
                 const email = extractedData.email ? extractedData.email.trim() : "";
 
-                if (email) emailInput.value = email;
-                if (name) userNameInput.value = name;
-                if (role) selectRoleValue(role);
-                if (org) userOrgInput.value = org;
-                if (dob) userDobInput.value = dob;
-                if (phone) userPhoneInput.value = phone;
-                checkFormValidity();
-                
-                notify("Query parameters detected. Enter password or sign in with social provider.", "status");
+                const isStudentOrPro = ['cs_student', 'engineering_student', 'software_dev', 'employee', 'startup_owner'].includes(role);
+                const isOrgValid = !isStudentOrPro || validators.org(org);
+                const isProfileValid = validators.name(name) && validators.role(role) && validators.dob(dob) && validators.phone(phone) && isOrgValid;
+
+                if (isProfileValid) {
+                    isQueryAuthTriggered = true;
+                    showSplash("AUTHORIZING", "Verifying_Specialist_Registry...");
+
+                    try {
+                        let user = auth.currentUser;
+                        if (!user) {
+                            // Authenticate anonymously so Firebase Auth session is active for Firestore security rules
+                            const userCred = await signInAnonymously(auth);
+                            user = userCred.user;
+                        }
+
+                        const userUid = targetUid || user.uid;
+                        const profileRef = doc(db, 'artifacts', userUid, 'profile', 'data');
+                        
+                        const profileData = {
+                            name,
+                            role,
+                            organization: org || null,
+                            dob,
+                            phone: "+91" + phone,
+                            email: email || user.email || null,
+                            joinedAt: new Date().toISOString()
+                        };
+
+                        await setDoc(profileRef, profileData, { merge: true });
+                        localStorage.setItem('matrix_user_session', JSON.stringify({ uid: userUid, ...profileData }));
+
+                        showSplash("ACCESS GRANTED", `${name.toUpperCase()} // REGISTRY_VERIFIED`);
+                        setTimeout(() => navigateTo('./arena.html'), 1200);
+                        return;
+                    } catch (err) {
+                        hideSplash();
+                        notify("ERR: REGISTRY_SYNC_FAILED", "error");
+                    }
+                } else {
+                    // Pre-fill form fields for manual completion
+                    if (email) emailInput.value = email;
+                    if (name) userNameInput.value = name;
+                    if (role) selectRoleValue(role);
+                    if (org) userOrgInput.value = org;
+                    if (dob) userDobInput.value = dob;
+                    if (phone) userPhoneInput.value = phone;
+                    checkFormValidity();
+                    notify("Incomplete profile data in URL. Complete remaining fields to authorize.", "status");
+                }
             }
         };
 
